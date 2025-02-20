@@ -47,10 +47,10 @@
     <ClInclude Include="lilyan.h">
       <Filter>Header File</Filter>
     </ClInclude>
-    <ClInclude Include="adv.h">
-      <Filter>Source File</Filter>
-    </ClInclude>
     <ClInclude Include="lilyan_scene_crafter.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="adv.h">
       <Filter>Header File</Filter>
     </ClInclude>
   </ItemGroup>
