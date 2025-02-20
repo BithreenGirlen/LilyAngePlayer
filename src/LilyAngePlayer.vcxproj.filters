@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source File">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header File">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="d2_image_drawer.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="d2_text_writer.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="main_window.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="media_setting_dialogue.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="mf_media_player.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="text_utility.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="view_manager.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="win_dialogue.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="win_filesystem.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="win_image.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="win_text.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="lilyan.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="adv.h">
+      <Filter>Source File</Filter>
+    </ClInclude>
+    <ClInclude Include="lilyan_scene_crafter.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="d2_image_drawer.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="d2_text_writer.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="main_window.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="media_setting_dialogue.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="mf_media_player.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="view_manager.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="win_dialogue.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="win_filesystem.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="win_image.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="win_text.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="lilyan.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="lilyan_scene_crafter.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
