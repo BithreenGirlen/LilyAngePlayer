@@ -163,8 +163,8 @@ LRESULT CMainWindow::OnCreate(HWND hWnd)
 
 	m_pViewManager = std::make_unique<CViewManager>(m_hWnd);
 
-	m_pMfAudioPlayer = std::make_unique<CMfMediaPlayer>();
-	m_pMfAudioPlayer->SetPlaybackWindow(m_hWnd, EventMessage::kAudioPlayer);
+	m_pMfVoicePlayer = std::make_unique<CMfMediaPlayer>();
+	m_pMfVoicePlayer->SetPlaybackWindow(m_hWnd, EventMessage::kAudioPlayer);
 
 	m_pSceneCrafter = std::make_unique<CLilyanSceneCrafter>(m_pD2ImageDrawer->GetD2DeviceContext());
 
@@ -208,7 +208,7 @@ LRESULT CMainWindow::OnPaint()
 
 		if (!m_bTextHidden)
 		{
-			std::wstring wstr = m_pSceneCrafter->GetCurrentText();
+			std::wstring wstr = m_pSceneCrafter->GetCurrentFormattedText();
 			m_pD2TextWriter->OutLinedDraw(wstr.c_str(), static_cast<unsigned long>(wstr.size()));
 		}
 		m_pD2ImageDrawer->Display();
@@ -287,9 +287,9 @@ LRESULT CMainWindow::OnTimer(WPARAM wParam)
 	switch (wParam)
 	{
 	case Timer::kText:
-		if (m_pMfAudioPlayer != nullptr)
+		if (m_pMfVoicePlayer != nullptr)
 		{
-			if (m_pMfAudioPlayer->IsEnded())
+			if (m_pMfVoicePlayer->IsEnded())
 			{
 				AutoTexting();
 			}
@@ -487,7 +487,7 @@ void CMainWindow::MenuOnForeFile()
 /*音声ループ設定切り替え*/
 void CMainWindow::MenuOnAudioLoop()
 {
-	if (m_pMfAudioPlayer.get() != nullptr)
+	if (m_pMfVoicePlayer.get() != nullptr)
 	{
 		HMENU hMenuBar = ::GetMenu(m_hWnd);
 		if (hMenuBar != nullptr)
@@ -495,7 +495,7 @@ void CMainWindow::MenuOnAudioLoop()
 			HMENU hMenu = ::GetSubMenu(hMenuBar, MenuBar::kAudio);
 			if (hMenu != nullptr)
 			{
-				BOOL iRet = m_pMfAudioPlayer->SwitchLoop();
+				BOOL iRet = m_pMfVoicePlayer->SwitchLoop();
 				::CheckMenuItem(hMenu, Menu::kAudioLoop, iRet == TRUE ? MF_CHECKED : MF_UNCHECKED);
 			}
 		}
@@ -504,10 +504,10 @@ void CMainWindow::MenuOnAudioLoop()
 /*音量・再生速度変更*/
 void CMainWindow::MenuOnAudioSetting()
 {
-	if (m_pMfAudioPlayer.get() != nullptr)
+	if (m_pMfVoicePlayer.get() != nullptr)
 	{
 		CMediaSettingDialogue sMediaSettingDialogue;
-		sMediaSettingDialogue.Open(m_hInstance, m_hWnd, m_pMfAudioPlayer.get(), L"Audio");
+		sMediaSettingDialogue.Open(m_hInstance, m_hWnd, m_pMfVoicePlayer.get(), L"Audio");
 	}
 }
 /*表示形式切り替え*/
@@ -562,7 +562,15 @@ bool CMainWindow::SetupScenario(const wchar_t* pwzFilePath)
 				::SetWindowText(m_hWnd, wstrSceneTitle.c_str());
 			}
 
+			m_pMfSoundPlayer = std::make_unique<CMfMediaPlayer>();
+
 			UpdateText();
+		}
+		else
+		{
+			std::wstring wstrMessage = L"Failed to set up ";
+			wstrMessage += pwzFilePath;
+			::MessageBox(m_hWnd, wstrMessage.c_str(), L"Error", MB_ICONERROR);
 		}
 	}
 
@@ -587,14 +595,24 @@ void CMainWindow::UpdateText()
 {
 	if (m_pSceneCrafter.get() != nullptr)
 	{
-		std::wstring wstrVoiceFilePath = m_pSceneCrafter->GetCurrentVoiceFilePath();
-		if (!wstrVoiceFilePath.empty())
+		if (m_pMfSoundPlayer.get() != nullptr)
 		{
-			if (m_pMfAudioPlayer.get() != nullptr)
+			const wchar_t* pwzSoundFilePath = m_pSceneCrafter->GetCurrentSoundFilePath();
+			if (pwzSoundFilePath != nullptr && *pwzSoundFilePath != L'\0')
 			{
-				m_pMfAudioPlayer->Play(wstrVoiceFilePath.c_str());
+				m_pMfSoundPlayer->Play(pwzSoundFilePath);
 			}
 		}
+
+		if (m_pMfVoicePlayer.get() != nullptr)
+		{
+			const wchar_t *pwzVoiceFilePath = m_pSceneCrafter->GetCurrentVoiceFilePath();
+			if (pwzVoiceFilePath != nullptr && *pwzVoiceFilePath != L'\0')
+			{
+				m_pMfVoicePlayer->Play(pwzVoiceFilePath);
+			}
+		}
+
 		constexpr unsigned int kTimerInterval = 2000;
 		::SetTimer(m_hWnd, Timer::kText, kTimerInterval, nullptr);
 

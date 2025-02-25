@@ -90,7 +90,8 @@ private:
 	std::unique_ptr<CD2ImageDrawer> m_pD2ImageDrawer;
 	std::unique_ptr<CD2TextWriter> m_pD2TextWriter;
 	std::unique_ptr<CViewManager> m_pViewManager;
-	std::unique_ptr<CMfMediaPlayer> m_pMfAudioPlayer;
+	std::unique_ptr<CMfMediaPlayer> m_pMfVoicePlayer;
+	std::unique_ptr<CMfMediaPlayer> m_pMfSoundPlayer;
 	std::unique_ptr<CLilyanSceneCrafter> m_pSceneCrafter;
 
 	void ShiftText(bool bForward);

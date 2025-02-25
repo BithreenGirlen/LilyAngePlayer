@@ -24,8 +24,9 @@ public:
 	bool HasReachedLastScene();
 
 	ID2D1Bitmap* GetCurrentImage();
-	std::wstring GetCurrentText();
-	std::wstring GetCurrentVoiceFilePath();
+	std::wstring GetCurrentFormattedText();
+	const wchar_t* GetCurrentVoiceFilePath();
+	const wchar_t* GetCurrentSoundFilePath();
 private:
 	ID2D1DeviceContext* m_pStoredD2d1DeviceContext = nullptr;
 
@@ -37,6 +38,8 @@ private:
 	size_t m_nSceneIndex = 0;
 
 	std::vector<CComPtr<ID2D1Bitmap>> m_images;
+
+	std::vector<adv::SoundDatum> m_soundData;
 
 	void ClearScenarioData();
 	ID2D1Bitmap* ImportWholeImage(const std::wstring& wstrImageFilePath);

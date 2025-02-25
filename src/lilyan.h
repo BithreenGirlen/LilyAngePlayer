@@ -13,7 +13,8 @@ namespace lilyan
 		std::vector<adv::TextDatum>& textData,
 		std::vector<std::wstring>& imageFilePaths,
 		std::vector<adv::SceneDatum>& sceneData,
-		std::wstring &wstrTitle
+		std::wstring &wstrTitle,
+		std::vector<adv::SoundDatum>& soundData
 	);
 }
 

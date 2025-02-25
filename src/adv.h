@@ -16,6 +16,12 @@ namespace adv
 		size_t nTextIndex = 0;
 		size_t nImageIndex = 0;
 	};
+
+	struct SoundDatum
+	{
+		size_t nSceneIndex = 0;
+		std::wstring wstrSoundFilePath;
+	};
 }
 
 #endif // ADV_H_

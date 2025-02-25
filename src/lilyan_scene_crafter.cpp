@@ -22,8 +22,11 @@ bool CLilyanSceneCrafter::LoadScenario(const wchar_t* pwzScenarioFilePath)
 	ClearScenarioData();
 
 	std::vector<std::wstring> wstrImageFilePaths;
-	lilyan::LoadScenario(pwzScenarioFilePath, m_textData, wstrImageFilePaths, m_sceneData, m_wstrSceneTitle);
-	if (!m_wstrSceneTitle.empty())m_wstrSceneTitle.erase(0, 1);
+	lilyan::LoadScenario(pwzScenarioFilePath, m_textData, wstrImageFilePaths, m_sceneData, m_wstrSceneTitle, m_soundData);
+	if (!m_wstrSceneTitle.empty())
+	{
+		m_wstrSceneTitle.erase(0, 1);
+	}
 
 	for (const auto& wstrImageFilePath : wstrImageFilePaths)
 	{
@@ -91,7 +94,7 @@ ID2D1Bitmap* CLilyanSceneCrafter::GetCurrentImage()
 	return nullptr;
 }
 /*文章生成*/
-std::wstring CLilyanSceneCrafter::GetCurrentText()
+std::wstring CLilyanSceneCrafter::GetCurrentFormattedText()
 {
 	std::wstring wstr;
 	if (m_nSceneIndex < m_sceneData.size())
@@ -110,18 +113,37 @@ std::wstring CLilyanSceneCrafter::GetCurrentText()
 	return wstr;
 }
 /*現在の音声ファイル経路受け渡し*/
-std::wstring CLilyanSceneCrafter::GetCurrentVoiceFilePath()
+const wchar_t* CLilyanSceneCrafter::GetCurrentVoiceFilePath()
 {
 	if (m_nSceneIndex < m_sceneData.size())
 	{
 		size_t nTextIndex = m_sceneData[m_nSceneIndex].nTextIndex;
 		if (nTextIndex < m_textData.size())
 		{
-			return m_textData[nTextIndex].wstrVoicePath;
+			return m_textData[nTextIndex].wstrVoicePath.c_str();
 		}
 	}
 
-	return std::wstring();
+	return nullptr;
+}
+/*現在の効果音ファイル経路受け渡し*/
+const wchar_t* CLilyanSceneCrafter::GetCurrentSoundFilePath()
+{
+	const auto iter = std::find_if
+	(
+		m_soundData.begin(), m_soundData.end(),
+		[this](adv::SoundDatum& soundDatum)
+		{
+			return soundDatum.nSceneIndex == m_nSceneIndex;
+		}
+	);
+
+	if (iter != m_soundData.cend())
+	{
+		return m_soundData[std::distance(m_soundData.begin(), iter)].wstrSoundFilePath.c_str();
+	}
+
+	return nullptr;
 }
 /*消去*/
 void CLilyanSceneCrafter::ClearScenarioData()
@@ -134,6 +156,8 @@ void CLilyanSceneCrafter::ClearScenarioData()
 	m_images.clear();
 
 	m_wstrSceneTitle.clear();
+
+	m_soundData.clear();
 }
 
 ID2D1Bitmap* CLilyanSceneCrafter::ImportWholeImage(const std::wstring& wstrImageFilePath)
