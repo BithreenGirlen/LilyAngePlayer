@@ -5,18 +5,22 @@
 ## 前準備
 
 1. 資産ファイルを入手。
-    - 自作するか、[公開](https://github.com/BithreenGirlen/LilyAngePlayer/releases)同梱ファイルを参照。
-2. 資産ファイルを伸展し、台本以外の素材を抽出。
+    - 自作するか、[リリース](https://github.com/BithreenGirlen/LilyAngePlayer/releases)参照。
+2. 資産ファイルを伸展し、脚本以外の素材を抽出。
     - 使い慣れた方法を選んで下さい。
-3. 台本ファイルをJSON形式で吐き出し。
+3. 脚本ファイルをJSON形式で吐き出し。
     - [UABEA](https://github.com/BithreenGirlen/UABEA)で吐き出し可能です。
 
-次のような階層構造から成る素材・台本ファイル群が整えば準備完了です。
+次のような階層構造から成る素材・脚本ファイルが整えば準備完了です。
 <pre>
 Assets
 ├ ...
 └ Naninovel
   ├ ...
+  ├ Audio
+  │  ├ ...
+  │  └ Sfx // 効果音フォルダ
+  │     └ ...
   ├ Backgrounds
   │  └ MainBackground // 静画フォルダ
   │     ├ Event
@@ -27,7 +31,7 @@ Assets
   │     │  └ ...
   │     └ ...
   ├ ...
-  ├ Scripts // 台本フォルダ
+  ├ Scripts // 脚本フォルダ
   │  ├ ...
   │  ├ chara1001_201.nani // この形式のファイルを選択
   │  └ ...
@@ -37,7 +41,6 @@ Assets
   │  │  └ ...
   │  └ ...
   └ ...
-
 </pre>
 
 ## 再生方法
@@ -66,13 +69,6 @@ Assets
 | Up | 前のファイルを開く。 |
 | Down | 次のファイルを開く。 |
 
-## メニュー機能
-| 分類 | 項目 | 機能 |
-| --- | --- | --- |
-| Folder | Open | フォルダ選択ダイアログ表示。 |
-| Audio | Loop | 音声ループ有効・無効切り替え。 |
-| - | Setting | 音量・再生速度設定画面表示。 |
-
 ## 外部ライブラリ
 - [JSON for Modern C++ v3.11.3](https://github.com/nlohmann/json/releases/tag/v3.11.3)
 
@@ -80,3 +76,14 @@ Assets
 1. `src/deps/CMakeLists.txt`を実行して外部ライブラリを取得。
 2. Visual Studioから`LilyAngePlayer.sln`を開く。
 3. メニュー欄`ビルド`から`ソリューションのビルド`を選択。
+
+## 修正作業
+
+一部ファイルは配置や名称が脚本指定と異なるので、修正する必要があります。
+- chara1023_203.nani
+  - `Event/雛菊/雫`階層にある以下の3つのファイルを`Event/雫`に移動。
+    - chara1023_cg_3_1.png
+    - chara1023_cg_3_2.png
+    - chara1023_cg_3_3.png
+- chara1032_203.nani
+  - `voice_1032_04_00110.m4a`など`_04_`を含むファイル名を`_01_XXXXX`のような書式に名称変更。
