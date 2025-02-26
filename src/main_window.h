@@ -46,7 +46,7 @@ private:
 	enum Menu
 	{
 		kOpenFile = 1,
-		kAudioLoop, kAudioSetting
+		kVoiceSetting, kSoundSetting
 	};
 	enum MenuBar
 	{
@@ -78,8 +78,8 @@ private:
 	void MenuOnNextFile();
 	void MenuOnForeFile();
 
-	void MenuOnAudioLoop();
-	void MenuOnAudioSetting();
+	void MenuOnVoiceSetting();
+	void MenuOnSoundSetting();
 
 	void SwitchWindowStyle();
 

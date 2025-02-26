@@ -264,11 +264,11 @@ LRESULT CMainWindow::OnCommand(WPARAM wParam, LPARAM lParam)
 		case Menu::kOpenFile:
 			MenuOnOpenFile();
 			break;
-		case Menu::kAudioLoop:
-			MenuOnAudioLoop();
+		case Menu::kVoiceSetting:
+			MenuOnVoiceSetting();
 			break;
-		case Menu::kAudioSetting:
-			MenuOnAudioSetting();
+		case Menu::kSoundSetting:
+			MenuOnSoundSetting();
 			break;
 		default:
 			break;
@@ -412,9 +412,9 @@ void CMainWindow::InitialiseMenuBar()
 	hMenuAudio = ::CreateMenu();
 	if (hMenuAudio == nullptr)goto failed;
 
-	iRet = ::AppendMenuA(hMenuAudio, MF_STRING, Menu::kAudioLoop, "Loop");
+	iRet = ::AppendMenuA(hMenuAudio, MF_STRING, Menu::kVoiceSetting, "Voice setting");
 	if (iRet == 0)goto failed;
-	iRet = ::AppendMenuA(hMenuAudio, MF_STRING, Menu::kAudioSetting, "Setting");
+	iRet = ::AppendMenuA(hMenuAudio, MF_STRING, Menu::kSoundSetting, "Sound setting");
 	if (iRet == 0)goto failed;
 
 	hMenuBar = ::CreateMenu();
@@ -484,30 +484,22 @@ void CMainWindow::MenuOnForeFile()
 
 	SetupScenario(m_scriptFilePaths[m_nScriptFileIndex].c_str());
 }
-/*音声ループ設定切り替え*/
-void CMainWindow::MenuOnAudioLoop()
-{
-	if (m_pMfVoicePlayer.get() != nullptr)
-	{
-		HMENU hMenuBar = ::GetMenu(m_hWnd);
-		if (hMenuBar != nullptr)
-		{
-			HMENU hMenu = ::GetSubMenu(hMenuBar, MenuBar::kAudio);
-			if (hMenu != nullptr)
-			{
-				BOOL iRet = m_pMfVoicePlayer->SwitchLoop();
-				::CheckMenuItem(hMenu, Menu::kAudioLoop, iRet == TRUE ? MF_CHECKED : MF_UNCHECKED);
-			}
-		}
-	}
-}
-/*音量・再生速度変更*/
-void CMainWindow::MenuOnAudioSetting()
+/*音声音量・再生速度変更*/
+void CMainWindow::MenuOnVoiceSetting()
 {
 	if (m_pMfVoicePlayer.get() != nullptr)
 	{
 		CMediaSettingDialogue sMediaSettingDialogue;
-		sMediaSettingDialogue.Open(m_hInstance, m_hWnd, m_pMfVoicePlayer.get(), L"Audio");
+		sMediaSettingDialogue.Open(m_hInstance, m_hWnd, m_pMfVoicePlayer.get(), L"Voice");
+	}
+}
+/*効果音音量・再生速度変更*/
+void CMainWindow::MenuOnSoundSetting()
+{
+	if (m_pMfSoundPlayer.get() != nullptr)
+	{
+		CMediaSettingDialogue sMediaSettingDialogue;
+		sMediaSettingDialogue.Open(m_hInstance, m_hWnd, m_pMfSoundPlayer.get(), L"Sound");
 	}
 }
 /*表示形式切り替え*/
