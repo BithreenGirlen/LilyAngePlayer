@@ -1,4 +1,4 @@
-
+ï»¿
 
 #include <atlbase.h>
 
@@ -54,7 +54,7 @@ CD2TextWriter::~CD2TextWriter()
 		m_pDWriteFactory = nullptr;
 	}
 }
-/*‰—L‚è•`‰æ–‘Oİ’è*/
+/*ç¸æœ‰ã‚Šæç”»äº‹å‰è¨­å®š*/
 bool CD2TextWriter::SetupOutLinedDrawing(const wchar_t* pwzFontFilePath)
 {
 	if (m_pDWriteFontFace == nullptr)
@@ -67,7 +67,7 @@ bool CD2TextWriter::SetupOutLinedDrawing(const wchar_t* pwzFontFilePath)
 
 	return true;
 }
-/*’Pƒ•`‰æ*/
+/*å˜ç´”æç”»*/
 void CD2TextWriter::NoBorderDraw(const wchar_t* wszText, unsigned long ulTextLength, const D2D1_RECT_F& rect)
 {
 	if (m_pStoredD2d1DeviceContext == nullptr || m_pDWriteFormat == nullptr || m_pD2d1SolidColorBrush == nullptr)
@@ -78,7 +78,7 @@ void CD2TextWriter::NoBorderDraw(const wchar_t* wszText, unsigned long ulTextLen
 	m_pStoredD2d1DeviceContext->DrawText(wszText, ulTextLength, m_pDWriteFormat, &rect, m_pD2d1SolidColorBrush);
 	m_pStoredD2d1DeviceContext->EndDraw();
 }
-/*‰—L‚è•`‰æ*/
+/*ç¸æœ‰ã‚Šæç”»*/
 void CD2TextWriter::OutLinedDraw(const wchar_t* wszText, unsigned long ulTextLength, const D2D1_RECT_F& rect)
 {
 	if (m_pStoredD2d1DeviceContext == nullptr
@@ -88,7 +88,7 @@ void CD2TextWriter::OutLinedDraw(const wchar_t* wszText, unsigned long ulTextLen
 		return;
 	}
 
-	/*‘¼‚Ì•`‰æ–@‚Æˆá‚Á‚Ä§ŒäƒR[ƒh‚à•¶š—ñ‚Æ‚µ‚ÄŒ©‚Ä‚µ‚Ü‚¤‚Ì‚Åˆês–ˆ‚É•`‰æ‚·‚éB*/
+	/*ä»–ã®æç”»æ³•ã¨é•ã£ã¦åˆ¶å¾¡ã‚³ãƒ¼ãƒ‰ã‚‚æ–‡å­—åˆ—ã¨ã—ã¦è¦‹ã¦ã—ã¾ã†ã®ã§ä¸€è¡Œæ¯ã«æç”»ã™ã‚‹ã€‚*/
 	const auto TextToLines = 
 		[&wszText, &ulTextLength](std::vector<std::vector<wchar_t>>& lines, size_t nMax = SIZE_MAX)
 		-> void
@@ -129,7 +129,7 @@ void CD2TextWriter::OutLinedDraw(const wchar_t* wszText, unsigned long ulTextLen
 		};
 
 	D2D1_SIZE_F fSize = m_pStoredD2d1DeviceContext->GetSize();
-	size_t nMax = static_cast<size_t>(fSize.width / PointSizeToDip(m_fFontSize)) - 2LL;
+	size_t nMax = static_cast<size_t>((fSize.width - (rect.left - rect.right)) / PointSizeToDip(m_fFontSize)) - 2LL;
 
 	std::vector<std::vector<wchar_t>> lines;
 	TextToLines(lines, nMax);
@@ -142,7 +142,7 @@ void CD2TextWriter::OutLinedDraw(const wchar_t* wszText, unsigned long ulTextLen
 	}
 	m_pStoredD2d1DeviceContext->EndDraw();
 }
-/*•¶šŠÔŠuw’è•`‰æ*/
+/*æ–‡å­—é–“éš”æŒ‡å®šæç”»*/
 void CD2TextWriter::LayedOutDraw(const wchar_t* wszText, unsigned long ulTextLength, const D2D1_RECT_F& rect)
 {
 	if (m_pStoredD2d1DeviceContext == nullptr || m_pDWriteFormat == nullptr || m_pD2d1SolidColorBrush == nullptr)
@@ -163,7 +163,7 @@ void CD2TextWriter::LayedOutDraw(const wchar_t* wszText, unsigned long ulTextLen
 	m_pStoredD2d1DeviceContext->DrawTextLayout(D2D1_POINT_2F{ rect.left, rect.top }, pDWriteTextLayout1, m_pD2d1SolidColorBrush);
 	m_pStoredD2d1DeviceContext->EndDraw();
 }
-/*š‘Ìƒtƒ@ƒCƒ‹İ’è*/
+/*å­—ä½“ãƒ•ã‚¡ã‚¤ãƒ«è¨­å®š*/
 bool CD2TextWriter::SetupFont(const wchar_t* pwzFontFilePath)
 {
 	if (m_pDWriteFactory == nullptr)return false;
@@ -177,7 +177,7 @@ bool CD2TextWriter::SetupFont(const wchar_t* pwzFontFilePath)
 
 	return SUCCEEDED(hr);
 }
-/*“h‚è‚Â‚Ô‚µFì¬*/
+/*å¡—ã‚Šã¤ã¶ã—è‰²ä½œæˆ*/
 bool CD2TextWriter::CreateBrushes()
 {
 	if (m_pStoredD2d1DeviceContext == nullptr)return false;
@@ -201,7 +201,7 @@ bool CD2TextWriter::CreateBrushes()
 
 	return SUCCEEDED(hr);
 }
-/*ˆês’¤*/
+/*ä¸€è¡Œå½«åˆ»*/
 bool CD2TextWriter::SingleLineGlyphDraw(const wchar_t* wszText, unsigned long ulTextLength, const D2D1_POINT_2F& fRawPos)
 {
 	std::vector<UINT32> codePoints;
