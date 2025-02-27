@@ -88,8 +88,15 @@ namespace lilyan
 						tokenDatum.strData += ":";
 					}
 
+					auto text = commandData.at("Text").at("value").get<std::string>();
+					if (text.empty())
+					{
+						text = commandData.at("Text").at("dynamicValue").at("ValueText").get<std::string>();
+						if (text.empty())continue;
+					}
+
 					tokenDatum.strData += " \n";
-					tokenDatum.strData += commandData.at("Text").at("value").get<std::string>();
+					tokenDatum.strData += text;
 				}
 				else if (commandType == "ModifyBackground")
 				{
@@ -186,11 +193,9 @@ bool lilyan::LoadScenario(const std::wstring& wstrScriptFilePath, std::vector<ad
 		}
 		else if (tokenType == ETokenType::Text)
 		{
-			/*一区切り*/
-			if(tokenDatum.strData.empty())continue;
-
 			adv::TextDatum textDatum;
 			textDatum.wstrText = win_text::WidenUtf8(tokenDatum.strData);
+			text_utility::ReplaceAll(textDatum.wstrText, L"{G_PlayerName}", L"主人公");
 
 			/*効果音と音声が重なる場合、文章データを複製して間を持たせる。*/
 			if (!wstrSoundFileNameBuffer.empty())
