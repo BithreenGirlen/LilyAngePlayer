@@ -35,6 +35,7 @@ private:
 	LRESULT OnClose();
 	LRESULT OnPaint();
 	LRESULT OnSize();
+	LRESULT OnKeyDown(WPARAM wParam, LPARAM lParam);
 	LRESULT OnKeyUp(WPARAM wParam, LPARAM lParam);
 	LRESULT OnCommand(WPARAM wParam, LPARAM lParam);
 	LRESULT OnTimer(WPARAM wParam);

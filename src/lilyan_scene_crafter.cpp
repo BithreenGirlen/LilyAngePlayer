@@ -23,7 +23,7 @@ bool CLilyanSceneCrafter::LoadScenario(const wchar_t* pwzScenarioFilePath)
 
 	std::vector<std::wstring> wstrImageFilePaths;
 	lilyan::LoadScenario(pwzScenarioFilePath, m_textData, wstrImageFilePaths, m_sceneData, m_wstrSceneTitle, m_soundData);
-	if (!m_wstrSceneTitle.empty())
+	if (!m_wstrSceneTitle.empty() && m_wstrSceneTitle[0] == L';')
 	{
 		m_wstrSceneTitle.erase(0, 1);
 	}

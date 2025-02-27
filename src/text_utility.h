@@ -143,6 +143,11 @@ namespace text_utility
 
 		return filePath.substr(nPos, nPos2 - nPos);
 	}
+	template <typename CharType>
+	std::basic_string<CharType> ExtractFileName(const CharType* filePath)
+	{
+		return ExtractFileName(std::basic_string<CharType>(filePath));
+	}
 
 	template <typename CharType>
 	std::basic_string<CharType> TruncateFilePath(const std::basic_string<CharType>& filePath)
@@ -168,7 +173,7 @@ namespace text_utility
 			return filePath.substr(nPos);
 		}
 
-		return std::basic_string<CharType>;
+		return std::basic_string<CharType>();
 	}
 
 } /* namespace text_utility */

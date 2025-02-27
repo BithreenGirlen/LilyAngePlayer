@@ -7,6 +7,7 @@
 #include "win_filesystem.h"
 #include "win_dialogue.h"
 #include "media_setting_dialogue.h"
+#include "text_utility.h"
 
 CMainWindow::CMainWindow()
 {
@@ -126,6 +127,8 @@ LRESULT CMainWindow::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 		return OnPaint();
 	case WM_ERASEBKGND:
 		return 1;
+	case WM_KEYDOWN:
+		return OnKeyDown(wParam, lParam);
 	case WM_KEYUP:
 		return OnKeyUp(wParam, lParam);
 	case WM_COMMAND:
@@ -221,6 +224,24 @@ LRESULT CMainWindow::OnPaint()
 /*WM_SIZE*/
 LRESULT CMainWindow::OnSize()
 {
+	return 0;
+}
+/*WM_KEYDOWN*/
+LRESULT CMainWindow::OnKeyDown(WPARAM wParam, LPARAM lParam)
+{
+	switch (wParam)
+	{
+	case VK_RIGHT:
+		AutoTexting();
+		break;
+	case VK_LEFT:
+		ShiftText(false);
+		break;
+	default:
+
+		break;
+	}
+
 	return 0;
 }
 /*WM_KEYUP*/
@@ -548,11 +569,9 @@ bool CMainWindow::SetupScenario(const wchar_t* pwzFilePath)
 				m_pViewManager->ResetZoom();
 			}
 
-			const auto& wstrSceneTitle = m_pSceneCrafter->GetSceneTitle();
-			if (!wstrSceneTitle.empty())
-			{
-				::SetWindowText(m_hWnd, wstrSceneTitle.c_str());
-			}
+			std::wstring wsrWindowTitle = m_pSceneCrafter->GetSceneTitle();
+			wsrWindowTitle += L"; " + text_utility::ExtractFileName(pwzFilePath);
+			::SetWindowText(m_hWnd, wsrWindowTitle.c_str());
 
 			m_pMfSoundPlayer = std::make_unique<CMfMediaPlayer>();
 
