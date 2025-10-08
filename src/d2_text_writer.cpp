@@ -14,39 +14,23 @@ CD2TextWriter::CD2TextWriter(ID2D1Factory1* pD2d1Factory1, ID2D1DeviceContext* p
 	HRESULT hr = ::DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&m_pDWriteFactory));
 	if (FAILED(hr))return;
 
-	hr = m_pDWriteFactory->CreateTextFormat(m_swzFontFamilyName, nullptr,
-		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_ITALIC, DWRITE_FONT_STRETCH_NORMAL,
-		PointSizeToDip(m_fFontSize), L"", &m_pDWriteFormat);
-	if (FAILED(hr))return;
+	SetFontByFontName(nullptr);
+
+	if (m_pStoredD2d1DeviceContext != nullptr)
+	{
+		m_pStoredD2d1DeviceContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_ALIASED);
+	}
 
 	CreateBrushes();
 }
 
 CD2TextWriter::~CD2TextWriter()
 {
-	if (m_pD2dSolidColorBrushForOutline != nullptr)
-	{
-		m_pD2dSolidColorBrushForOutline->Release();
-		m_pD2dSolidColorBrushForOutline = nullptr;
-	}
+	ReleaseBrushes();
 
-	if (m_pD2d1SolidColorBrush != nullptr)
-	{
-		m_pD2d1SolidColorBrush->Release();
-		m_pD2d1SolidColorBrush = nullptr;
-	}
+	ReleaseFontFace();
 
-	if (m_pDWriteFontFace != nullptr)
-	{
-		m_pDWriteFontFace->Release();
-		m_pDWriteFontFace = nullptr;
-	}
-
-	if (m_pDWriteFormat != nullptr)
-	{
-		m_pDWriteFormat->Release();
-		m_pDWriteFormat = nullptr;
-	}
+	ReleaseTextFormat();
 
 	if (m_pDWriteFactory != nullptr)
 	{
@@ -54,36 +38,93 @@ CD2TextWriter::~CD2TextWriter()
 		m_pDWriteFactory = nullptr;
 	}
 }
-/*縁有り描画事前設定*/
-bool CD2TextWriter::SetupOutLinedDrawing(const wchar_t* pwzFontFilePath)
+/*字体指定*/
+bool CD2TextWriter::SetFontByFontName(const wchar_t* pwzFontFamilyName, const wchar_t* pwzLocaleName, bool bBold, bool bItalic, float fFontSize)
 {
-	if (m_pDWriteFontFace == nullptr)
+	if (m_pStoredD2d1DeviceContext == nullptr)return false;
+
+	ReleaseTextFormat();
+
+	HRESULT hr = m_pDWriteFactory->CreateTextFormat(
+		pwzFontFamilyName == nullptr ? L"Yu mincho" : pwzFontFamilyName,
+		nullptr,
+		bBold ? DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_BOLD : DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_REGULAR,
+		bItalic ? DWRITE_FONT_STYLE::DWRITE_FONT_STYLE_ITALIC : DWRITE_FONT_STYLE::DWRITE_FONT_STYLE_NORMAL,
+		DWRITE_FONT_STRETCH_NORMAL,
+		PointSizeToDip(fFontSize),
+		pwzLocaleName == nullptr ? L"en-us" : pwzLocaleName,
+		&m_pDWriteTextFormat);
+
+	return SUCCEEDED(hr);
+}
+/*縁有り描画事前設定*/
+bool CD2TextWriter::SetupOutLinedDrawing(const wchar_t* pwzFontFilePath, bool bSimulateBold, bool bSimulateItalic, float fFontSize, float fStrokeThickness)
+{
+	if (m_pStoredD2d1DeviceContext == nullptr)return false;
+
+	ReleaseFontFace();
+
+	CComPtr<IDWriteFontFile> pDWriteFontFile;
+	HRESULT hr = m_pDWriteFactory->CreateFontFileReference(pwzFontFilePath, nullptr, &pDWriteFontFile);
+	if (FAILED(hr))return false;
+
+	BOOL iSupported = FALSE;
+	DWRITE_FONT_FILE_TYPE fontType = DWRITE_FONT_FILE_TYPE::DWRITE_FONT_FILE_TYPE_UNKNOWN;
+	DWRITE_FONT_FACE_TYPE fontFace = DWRITE_FONT_FACE_TYPE::DWRITE_FONT_FACE_TYPE_UNKNOWN;
+	UINT32 uiFaceCount = 0;
+	hr = pDWriteFontFile->Analyze(&iSupported, &fontType, &fontFace, &uiFaceCount);
+
+	DWRITE_FONT_SIMULATIONS fontSimulatioms = DWRITE_FONT_SIMULATIONS::DWRITE_FONT_SIMULATIONS_NONE;
+	if (bSimulateBold)fontSimulatioms |= DWRITE_FONT_SIMULATIONS::DWRITE_FONT_SIMULATIONS_BOLD;
+	if (bSimulateItalic)fontSimulatioms |= DWRITE_FONT_SIMULATIONS::DWRITE_FONT_SIMULATIONS_OBLIQUE;
+
+	IDWriteFontFile* pDWriteFontFiles[] = { pDWriteFontFile };
+	hr = m_pDWriteFactory->CreateFontFace(fontFace, 1U, pDWriteFontFiles, 0, fontSimulatioms, &m_pDWriteFontFace);
+	if (SUCCEEDED(hr))
 	{
-		bool bRet = SetupFont(pwzFontFilePath);
-		if (!bRet)return false;
+		m_fFontSize = fFontSize;
+		m_fStrokeThickness = fStrokeThickness;
 	}
 
-	m_pStoredD2d1DeviceContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_ALIASED);
-
-	return true;
+	return SUCCEEDED(hr);
 }
 /*単純描画*/
 void CD2TextWriter::NoBorderDraw(const wchar_t* wszText, unsigned long ulTextLength, const D2D1_RECT_F& rect)
 {
-	if (m_pStoredD2d1DeviceContext == nullptr || m_pDWriteFormat == nullptr || m_pD2d1SolidColorBrush == nullptr)
+	if (m_pStoredD2d1DeviceContext == nullptr || m_pDWriteTextFormat == nullptr || m_pD2d1SolidColorBrush == nullptr)
 	{
 		return;
 	}
 	m_pStoredD2d1DeviceContext->BeginDraw();
-	m_pStoredD2d1DeviceContext->DrawText(wszText, ulTextLength, m_pDWriteFormat, &rect, m_pD2d1SolidColorBrush);
+	m_pStoredD2d1DeviceContext->DrawText(wszText, ulTextLength, m_pDWriteTextFormat, &rect, m_pD2d1SolidColorBrush);
+	m_pStoredD2d1DeviceContext->EndDraw();
+}
+/*文字間隔指定描画*/
+void CD2TextWriter::LayedOutDraw(const wchar_t* wszText, unsigned long ulTextLength, const D2D1_RECT_F& rect)
+{
+	if (m_pStoredD2d1DeviceContext == nullptr || m_pDWriteTextFormat == nullptr || m_pD2d1SolidColorBrush == nullptr)
+	{
+		return;
+	}
+
+	CComPtr<IDWriteTextLayout>pDWriteTextLayout;
+	HRESULT hr = m_pDWriteFactory->CreateTextLayout(wszText, ulTextLength, m_pDWriteTextFormat, rect.right - rect.left, rect.bottom - rect.top, &pDWriteTextLayout);
+	
+	CComPtr<IDWriteTextLayout1>pDWriteTextLayout1;
+	hr = pDWriteTextLayout->QueryInterface(__uuidof(IDWriteTextLayout1), (void**)&pDWriteTextLayout1);
+
+	DWRITE_TEXT_RANGE sRange{ 0, ulTextLength };
+	hr = pDWriteTextLayout1->SetCharacterSpacing(1.f, 1.f, 2.f, sRange);
+	pDWriteTextLayout1->SetFontWeight(DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_EXTRA_BOLD, sRange);
+
+	m_pStoredD2d1DeviceContext->BeginDraw();
+	m_pStoredD2d1DeviceContext->DrawTextLayout(D2D1_POINT_2F{ rect.left, rect.top }, pDWriteTextLayout1, m_pD2d1SolidColorBrush);
 	m_pStoredD2d1DeviceContext->EndDraw();
 }
 /*縁有り描画*/
 void CD2TextWriter::OutLinedDraw(const wchar_t* wszText, unsigned long ulTextLength, const D2D1_RECT_F& rect)
 {
-	if (m_pStoredD2d1DeviceContext == nullptr
-		|| m_pD2d1SolidColorBrush == nullptr || m_pD2dSolidColorBrushForOutline == nullptr
-		|| m_pDWriteFontFace == nullptr)
+	if (m_pStoredD2d1DeviceContext == nullptr || m_pD2d1SolidColorBrush == nullptr || m_pD2dSolidColorBrushForOutline == nullptr || m_pDWriteFontFace == nullptr)
 	{
 		return;
 	}
@@ -142,64 +183,93 @@ void CD2TextWriter::OutLinedDraw(const wchar_t* wszText, unsigned long ulTextLen
 	}
 	m_pStoredD2d1DeviceContext->EndDraw();
 }
-/*文字間隔指定描画*/
-void CD2TextWriter::LayedOutDraw(const wchar_t* wszText, unsigned long ulTextLength, const D2D1_RECT_F& rect)
+
+bool CD2TextWriter::HasBoldStyle() const
 {
-	if (m_pStoredD2d1DeviceContext == nullptr || m_pDWriteFormat == nullptr || m_pD2d1SolidColorBrush == nullptr)
+	if (m_pDWriteFontFace != nullptr)
 	{
-		return;
+		DWRITE_FONT_SIMULATIONS fontSimulatioms = m_pDWriteFontFace->GetSimulations();
+		return fontSimulatioms & DWRITE_FONT_SIMULATIONS::DWRITE_FONT_SIMULATIONS_BOLD;
+	}
+	else if (m_pDWriteTextFormat != nullptr)
+	{
+		DWRITE_FONT_WEIGHT eFontWeight = m_pDWriteTextFormat->GetFontWeight();
+		return eFontWeight >= DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_BOLD;
 	}
 
-	CComPtr<IDWriteTextLayout>pDWriteTextLayout;
-	HRESULT hr = m_pDWriteFactory->CreateTextLayout(wszText, ulTextLength, m_pDWriteFormat, rect.right - rect.left, rect.bottom - rect.top, &pDWriteTextLayout);
-	CComPtr<IDWriteTextLayout1>pDWriteTextLayout1;
-	hr = pDWriteTextLayout->QueryInterface(__uuidof(IDWriteTextLayout1), (void**)&pDWriteTextLayout1);
-
-	DWRITE_TEXT_RANGE sRange{ 0, ulTextLength };
-	hr = pDWriteTextLayout1->SetCharacterSpacing(1.f, 1.f, 2.f, sRange);
-	pDWriteTextLayout1->SetFontWeight(DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_EXTRA_BOLD, sRange);
-
-	m_pStoredD2d1DeviceContext->BeginDraw();
-	m_pStoredD2d1DeviceContext->DrawTextLayout(D2D1_POINT_2F{ rect.left, rect.top }, pDWriteTextLayout1, m_pD2d1SolidColorBrush);
-	m_pStoredD2d1DeviceContext->EndDraw();
+	return false;
 }
-/*字体ファイル設定*/
-bool CD2TextWriter::SetupFont(const wchar_t* pwzFontFilePath)
+
+bool CD2TextWriter::HasItalicStyle() const
 {
-	if (m_pDWriteFactory == nullptr)return false;
+	if (m_pDWriteFontFace != nullptr)
+	{
+		DWRITE_FONT_SIMULATIONS fontSimulatioms = m_pDWriteFontFace->GetSimulations();
+		return fontSimulatioms & DWRITE_FONT_SIMULATIONS::DWRITE_FONT_SIMULATIONS_OBLIQUE;
+	}
+	else if (m_pDWriteTextFormat != nullptr)
+	{
+		DWRITE_FONT_STYLE eFontStyle = m_pDWriteTextFormat->GetFontStyle();
+		return eFontStyle == DWRITE_FONT_STYLE::DWRITE_FONT_STYLE_ITALIC;
+	}
 
-	CComPtr<IDWriteFontFile> pDWriteFontFile;
-	HRESULT hr = m_pDWriteFactory->CreateFontFileReference(pwzFontFilePath, nullptr, &pDWriteFontFile);
-	if (FAILED(hr))return false;
+	return false;
+}
 
-	IDWriteFontFile* pDWriteFontFiles[] = { pDWriteFontFile };
-	hr = m_pDWriteFactory->CreateFontFace(DWRITE_FONT_FACE_TYPE_TRUETYPE, 1U, pDWriteFontFiles, 0, DWRITE_FONT_SIMULATIONS_BOLD | DWRITE_FONT_SIMULATIONS_OBLIQUE, &m_pDWriteFontFace);
+bool CD2TextWriter::GetFontFamilyName(wchar_t* pwzFontFamilyName, unsigned long ulNameLength)
+{
+	if (m_pDWriteTextFormat != nullptr)
+	{
+		if (ulNameLength < m_pDWriteTextFormat->GetFontFamilyNameLength())return false;
 
-	return SUCCEEDED(hr);
+		return m_pDWriteTextFormat->GetFontFamilyName(pwzFontFamilyName, ulNameLength) == S_OK;
+	}
+	return false;
+}
+/*文字書式情報解放*/
+void CD2TextWriter::ReleaseTextFormat()
+{
+	if (m_pDWriteTextFormat != nullptr)
+	{
+		m_pDWriteTextFormat->Release();
+		m_pDWriteTextFormat = nullptr;
+	}
+}
+/*字体形状情報解放*/
+void CD2TextWriter::ReleaseFontFace()
+{
+	if (m_pDWriteFontFace != nullptr)
+	{
+		m_pDWriteFontFace->Release();
+		m_pDWriteFontFace = nullptr;
+	}
 }
 /*塗りつぶし色作成*/
 bool CD2TextWriter::CreateBrushes()
 {
 	if (m_pStoredD2d1DeviceContext == nullptr)return false;
 
+	ReleaseBrushes();
+
+	HRESULT hr = m_pStoredD2d1DeviceContext->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &m_pD2d1SolidColorBrush);
+	hr &= m_pStoredD2d1DeviceContext->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), &m_pD2dSolidColorBrushForOutline);
+
+	return SUCCEEDED(hr);
+}
+/*塗りつぶし色解放*/
+void CD2TextWriter::ReleaseBrushes()
+{
 	if (m_pD2d1SolidColorBrush != nullptr)
 	{
 		m_pD2d1SolidColorBrush->Release();
 		m_pD2d1SolidColorBrush = nullptr;
 	}
+
 	if (m_pD2dSolidColorBrushForOutline != nullptr)
 	{
 		m_pD2dSolidColorBrushForOutline->Release();
 		m_pD2dSolidColorBrushForOutline = nullptr;
 	}
-
-	HRESULT hr = m_pStoredD2d1DeviceContext->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &m_pD2d1SolidColorBrush);
-	if (SUCCEEDED(hr))
-	{
-		hr = m_pStoredD2d1DeviceContext->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), &m_pD2dSolidColorBrushForOutline);
-	}
-
-	return SUCCEEDED(hr);
 }
 /*一行彫刻*/
 bool CD2TextWriter::SingleLineGlyphDraw(const wchar_t* wszText, unsigned long ulTextLength, const D2D1_POINT_2F& fRawPos)
@@ -213,7 +283,7 @@ bool CD2TextWriter::SingleLineGlyphDraw(const wchar_t* wszText, unsigned long ul
 
 	std::vector<UINT16> glyphai;
 	glyphai.resize(ulTextLength);
-	HRESULT hr = m_pDWriteFontFace->GetGlyphIndicesW(codePoints.data(), static_cast<unsigned long>(codePoints.size()), glyphai.data());
+	HRESULT hr = m_pDWriteFontFace->GetGlyphIndices(codePoints.data(), static_cast<unsigned long>(codePoints.size()), glyphai.data());
 	if (FAILED(hr))return false;
 
 	CComPtr<ID2D1PathGeometry>pD2d1PathGeometry;
@@ -237,7 +307,7 @@ bool CD2TextWriter::SingleLineGlyphDraw(const wchar_t* wszText, unsigned long ul
 	D2D1_POINT_2F fPos = { fRawPos.x - fGeoRect.left, fRawPos.y - fGeoRect.top };
 
 	m_pStoredD2d1DeviceContext->SetTransform(D2D1::Matrix3x2F::Translation(fPos.x, fPos.y));
-	m_pStoredD2d1DeviceContext->DrawGeometry(pD2d1PathGeometry, m_bColourReversed ? m_pD2d1SolidColorBrush :m_pD2dSolidColorBrushForOutline, PointSizeToDip(m_fStrokeWidth));
+	m_pStoredD2d1DeviceContext->DrawGeometry(pD2d1PathGeometry, m_bColourReversed ? m_pD2d1SolidColorBrush :m_pD2dSolidColorBrushForOutline, PointSizeToDip(m_fStrokeThickness));
 	m_pStoredD2d1DeviceContext->FillGeometry(pD2d1PathGeometry, m_bColourReversed ? m_pD2dSolidColorBrushForOutline : m_pD2d1SolidColorBrush);
 	m_pStoredD2d1DeviceContext->SetTransform(D2D1::Matrix3x2F::Translation(0.f, 0.f));
 
