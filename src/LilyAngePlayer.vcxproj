@@ -133,12 +133,16 @@
     <ClInclude Include="lilyan.h" />
     <ClInclude Include="lilyan_scene_crafter.h" />
     <ClInclude Include="main_window.h" />
-    <ClInclude Include="media_setting_dialogue.h" />
     <ClInclude Include="mf_media_player.h" />
+    <ClInclude Include="native-ui\dialogue_controls.h" />
+    <ClInclude Include="native-ui\dialogue_template.h" />
+    <ClInclude Include="native-ui\font_setting_dialogue.h" />
+    <ClInclude Include="native-ui\media_setting_dialogue.h" />
     <ClInclude Include="text_utility.h" />
     <ClInclude Include="view_manager.h" />
     <ClInclude Include="win_dialogue.h" />
     <ClInclude Include="win_filesystem.h" />
+    <ClInclude Include="win_font.h" />
     <ClInclude Include="win_image.h" />
     <ClInclude Include="win_text.h" />
   </ItemGroup>
@@ -149,11 +153,15 @@
     <ClCompile Include="lilyan_scene_crafter.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="main_window.cpp" />
-    <ClCompile Include="media_setting_dialogue.cpp" />
     <ClCompile Include="mf_media_player.cpp" />
+    <ClCompile Include="native-ui\dialogue_controls.cpp" />
+    <ClCompile Include="native-ui\dialogue_template.cpp" />
+    <ClCompile Include="native-ui\font_setting_dialogue.cpp" />
+    <ClCompile Include="native-ui\media_setting_dialogue.cpp" />
     <ClCompile Include="view_manager.cpp" />
     <ClCompile Include="win_dialogue.cpp" />
     <ClCompile Include="win_filesystem.cpp" />
+    <ClCompile Include="win_font.cpp" />
     <ClCompile Include="win_image.cpp" />
     <ClCompile Include="win_text.cpp" />
   </ItemGroup>

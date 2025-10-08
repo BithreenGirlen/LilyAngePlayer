@@ -6,7 +6,7 @@
 
 #include "win_filesystem.h"
 #include "win_dialogue.h"
-#include "media_setting_dialogue.h"
+#include "native-ui/media_setting_dialogue.h"
 #include "text_utility.h"
 
 CMainWindow::CMainWindow()
@@ -135,12 +135,16 @@ LRESULT CMainWindow::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 		return OnCommand(wParam, lParam);
 	case WM_TIMER:
 		return OnTimer(wParam);
+	case WM_MOUSEMOVE:
+		return OnMouseMove(wParam, lParam);
 	case WM_MOUSEWHEEL:
 		return OnMouseWheel(wParam, lParam);
 	case WM_LBUTTONDOWN:
 		return OnLButtonDown(wParam, lParam);
 	case WM_LBUTTONUP:
 		return OnLButtonUp(wParam, lParam);
+	case WM_RBUTTONUP:
+		return OnRButtonUp(wParam, lParam);
 	case WM_MBUTTONUP:
 		return OnMButtonUp(wParam, lParam);
 	case EventMessage::kAudioPlayer:
@@ -170,6 +174,8 @@ LRESULT CMainWindow::OnCreate(HWND hWnd)
 	m_pMfVoicePlayer->SetPlaybackWindow(m_hWnd, EventMessage::kAudioPlayer);
 
 	m_pSceneCrafter = std::make_unique<CLilyanSceneCrafter>(m_pD2ImageDrawer->GetD2DeviceContext());
+
+	m_pFontSettingDialogue = std::make_unique<CFontSettingDialogue>();
 
 	return 0;
 }
@@ -209,7 +215,7 @@ LRESULT CMainWindow::OnPaint()
 	{
 		m_pD2ImageDrawer->Draw(pImage, { m_pViewManager->GetXOffset(), m_pViewManager->GetYOffset() }, m_pViewManager->GetScale());
 
-		if (!m_bTextHidden)
+		if (!m_isTextHidden)
 		{
 			std::wstring wstr = m_pSceneCrafter->GetCurrentFormattedText();
 			m_pD2TextWriter->OutLinedDraw(wstr.c_str(), static_cast<unsigned long>(wstr.size()));
@@ -266,7 +272,7 @@ LRESULT CMainWindow::OnKeyUp(WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	case 'T':
-		m_bTextHidden ^= true;
+		m_isTextHidden ^= true;
 		UpdateScreen();
 		break;
 	}
@@ -290,6 +296,9 @@ LRESULT CMainWindow::OnCommand(WPARAM wParam, LPARAM lParam)
 			break;
 		case Menu::kSoundSetting:
 			MenuOnSoundSetting();
+			break;
+		case Menu::kFontSetting:
+			MenuOnFontSetting();
 			break;
 		default:
 			break;
@@ -321,6 +330,34 @@ LRESULT CMainWindow::OnTimer(WPARAM wParam)
 	}
 	return 0;
 }
+/* WM_MOUSEMOVE */
+LRESULT CMainWindow::OnMouseMove(WPARAM wParam, LPARAM lParam)
+{
+	WORD usKey = LOWORD(wParam);
+	if (usKey == MK_LBUTTON)
+	{
+		if (m_wasLeftCombinated)return 0;
+
+		POINT pt{};
+		::GetCursorPos(&pt);
+		int iX = m_lastCursorPos.x - pt.x;
+		int iY = m_lastCursorPos.y - pt.y;
+
+		if (m_hasLeftBeenDragged)
+		{
+			if (m_pViewManager != nullptr)
+			{
+				m_pViewManager->SetOffset(iX, iY);
+				UpdateScreen();
+			}
+		}
+
+		m_lastCursorPos = pt;
+		m_hasLeftBeenDragged = true;
+	}
+
+	return 0;
+}
 /*WM_MOUSEWHEEL*/
 LRESULT CMainWindow::OnMouseWheel(WPARAM wParam, LPARAM lParam)
 {
@@ -334,15 +371,15 @@ LRESULT CMainWindow::OnMouseWheel(WPARAM wParam, LPARAM lParam)
 			m_pViewManager->Rescale(iScroll > 0);
 		}
 	}
-
-	if (wKey == MK_LBUTTON)
+	else if (wKey == MK_LBUTTON)
 	{
 
 	}
-
-	if (wKey == MK_RBUTTON)
+	else if (wKey == MK_RBUTTON)
 	{
 		ShiftText(iScroll > 0);
+
+		m_wasRightCombinated = true;
 	}
 
 	return 0;
@@ -350,9 +387,9 @@ LRESULT CMainWindow::OnMouseWheel(WPARAM wParam, LPARAM lParam)
 /*WM_LBUTTONDOWN*/
 LRESULT CMainWindow::OnLButtonDown(WPARAM wParam, LPARAM lParam)
 {
-	::GetCursorPos(&m_CursorPos);
+	::GetCursorPos(&m_lastCursorPos);
 
-	m_bLeftDowned = true;
+	m_wasLeftPressed = true;
 
 	return 0;
 }
@@ -361,7 +398,7 @@ LRESULT CMainWindow::OnLButtonUp(WPARAM wParam, LPARAM lParam)
 {
 	WORD usKey = LOWORD(wParam);
 
-	if (usKey == MK_RBUTTON && m_bBarHidden)
+	if (usKey == MK_RBUTTON && m_isBarHidden)
 	{
 		::PostMessage(m_hWnd, WM_SYSCOMMAND, SC_MOVE, 0);
 		INPUT input{};
@@ -370,27 +407,31 @@ LRESULT CMainWindow::OnLButtonUp(WPARAM wParam, LPARAM lParam)
 		::SendInput(1, &input, sizeof(input));
 	}
 
-	if (usKey == 0 && m_bLeftDowned)
+	if (usKey == 0 && m_wasLeftPressed)
 	{
 		POINT pt{};
 		::GetCursorPos(&pt);
-		int iX = m_CursorPos.x - pt.x;
-		int iY = m_CursorPos.y - pt.y;
+		int iX = m_lastCursorPos.x - pt.x;
+		int iY = m_lastCursorPos.y - pt.y;
 
 		if (iX == 0 && iY == 0)
 		{
 
 		}
-		else
-		{
-			if (m_pViewManager.get() != nullptr)
-			{
-				m_pViewManager->SetOffset(iX, iY);
-			}
-		}
 	}
 
-	m_bLeftDowned = false;
+	m_wasLeftPressed = false;
+
+	return 0;
+}
+/*WM_RBUTTONUP*/
+LRESULT CMainWindow::OnRButtonUp(WPARAM wParam, LPARAM lParam)
+{
+	if (m_wasRightCombinated)
+	{
+		m_wasRightCombinated = false;
+		return 0;
+	}
 
 	return 0;
 }
@@ -409,7 +450,7 @@ LRESULT CMainWindow::OnMButtonUp(WPARAM wParam, LPARAM lParam)
 
 	if (usKey == MK_RBUTTON)
 	{
-		SwitchWindowStyle();
+		ToggleWindowBorderStyle();
 	}
 
 	return 0;
@@ -418,7 +459,7 @@ LRESULT CMainWindow::OnMButtonUp(WPARAM wParam, LPARAM lParam)
 void CMainWindow::InitialiseMenuBar()
 {
 	HMENU hMenuFile = nullptr;
-	HMENU hMenuAudio = nullptr;
+	HMENU hMenuSetting = nullptr;
 	HMENU hMenuBar = nullptr;
 	BOOL iRet = FALSE;
 
@@ -430,12 +471,14 @@ void CMainWindow::InitialiseMenuBar()
 	iRet = ::AppendMenuA(hMenuFile, MF_STRING, Menu::kOpenFile, "Open");
 	if (iRet == 0)goto failed;
 
-	hMenuAudio = ::CreateMenu();
-	if (hMenuAudio == nullptr)goto failed;
+	hMenuSetting = ::CreateMenu();
+	if (hMenuSetting == nullptr)goto failed;
 
-	iRet = ::AppendMenuA(hMenuAudio, MF_STRING, Menu::kVoiceSetting, "Voice setting");
+	iRet = ::AppendMenuA(hMenuSetting, MF_STRING, Menu::kVoiceSetting, "Voice");
 	if (iRet == 0)goto failed;
-	iRet = ::AppendMenuA(hMenuAudio, MF_STRING, Menu::kSoundSetting, "Sound setting");
+	iRet = ::AppendMenuA(hMenuSetting, MF_STRING, Menu::kSoundSetting, "Sound");
+	if (iRet == 0)goto failed;
+	iRet = ::AppendMenuA(hMenuSetting, MF_STRING, Menu::kFontSetting, "Font");
 	if (iRet == 0)goto failed;
 
 	hMenuBar = ::CreateMenu();
@@ -443,7 +486,7 @@ void CMainWindow::InitialiseMenuBar()
 
 	iRet = ::AppendMenuA(hMenuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(hMenuFile), "File");
 	if (iRet == 0)goto failed;
-	iRet = ::AppendMenuA(hMenuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(hMenuAudio), "Audio");
+	iRet = ::AppendMenuA(hMenuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(hMenuSetting), "Setting");
 	if (iRet == 0)goto failed;
 
 	iRet = ::SetMenu(m_hWnd, hMenuBar);
@@ -460,9 +503,9 @@ failed:
 	{
 		::DestroyMenu(hMenuFile);
 	}
-	if (hMenuAudio != nullptr)
+	if (hMenuSetting != nullptr)
 	{
-		::DestroyMenu(hMenuAudio);
+		::DestroyMenu(hMenuSetting);
 	}
 	if (hMenuBar != nullptr)
 	{
@@ -523,16 +566,32 @@ void CMainWindow::MenuOnSoundSetting()
 		sMediaSettingDialogue.Open(m_hInstance, m_hWnd, m_pMfSoundPlayer.get(), L"Sound");
 	}
 }
+
+void CMainWindow::MenuOnFontSetting()
+{
+	if (m_pFontSettingDialogue != nullptr)
+	{
+		if (m_pFontSettingDialogue->GetHwnd() == nullptr)
+		{
+			HWND hWnd = m_pFontSettingDialogue->Open(m_hInstance, m_hWnd, L"Font", m_pD2TextWriter.get());
+			::ShowWindow(hWnd, SW_SHOWNORMAL);
+		}
+		else
+		{
+			::SetFocus(m_pFontSettingDialogue->GetHwnd());
+		}
+	}
+}
 /*表示形式切り替え*/
-void CMainWindow::SwitchWindowStyle()
+void CMainWindow::ToggleWindowBorderStyle()
 {
 	RECT rect;
 	::GetWindowRect(m_hWnd, &rect);
 	LONG lStyle = ::GetWindowLong(m_hWnd, GWL_STYLE);
 
-	m_bBarHidden ^= true;
+	m_isBarHidden ^= true;
 
-	if (m_bBarHidden)
+	if (m_isBarHidden)
 	{
 		::SetWindowLong(m_hWnd, GWL_STYLE, lStyle & ~WS_CAPTION & ~WS_SYSMENU);
 		::SetWindowPos(m_hWnd, nullptr, 0, 0, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER);

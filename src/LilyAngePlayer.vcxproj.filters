@@ -9,6 +9,12 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
+    <Filter Include="Header File\native-ui">
+      <UniqueIdentifier>{b5bb9b73-dd85-4e33-a917-89a40e82fc83}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source File\native-ui">
+      <UniqueIdentifier>{f42f81ad-8eee-4775-91fa-a91c3f67b08e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="d2_image_drawer.h">
@@ -18,9 +24,6 @@
       <Filter>Header File</Filter>
     </ClInclude>
     <ClInclude Include="main_window.h">
-      <Filter>Header File</Filter>
-    </ClInclude>
-    <ClInclude Include="media_setting_dialogue.h">
       <Filter>Header File</Filter>
     </ClInclude>
     <ClInclude Include="mf_media_player.h">
@@ -53,6 +56,21 @@
     <ClInclude Include="adv.h">
       <Filter>Header File</Filter>
     </ClInclude>
+    <ClInclude Include="native-ui\dialogue_controls.h">
+      <Filter>Header File\native-ui</Filter>
+    </ClInclude>
+    <ClInclude Include="native-ui\dialogue_template.h">
+      <Filter>Header File\native-ui</Filter>
+    </ClInclude>
+    <ClInclude Include="native-ui\font_setting_dialogue.h">
+      <Filter>Header File\native-ui</Filter>
+    </ClInclude>
+    <ClInclude Include="native-ui\media_setting_dialogue.h">
+      <Filter>Header File\native-ui</Filter>
+    </ClInclude>
+    <ClInclude Include="win_font.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="d2_image_drawer.cpp">
@@ -62,9 +80,6 @@
       <Filter>Source File</Filter>
     </ClCompile>
     <ClCompile Include="main_window.cpp">
-      <Filter>Source File</Filter>
-    </ClCompile>
-    <ClCompile Include="media_setting_dialogue.cpp">
       <Filter>Source File</Filter>
     </ClCompile>
     <ClCompile Include="mf_media_player.cpp">
@@ -92,6 +107,21 @@
       <Filter>Source File</Filter>
     </ClCompile>
     <ClCompile Include="lilyan_scene_crafter.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="native-ui\dialogue_controls.cpp">
+      <Filter>Source File\native-ui</Filter>
+    </ClCompile>
+    <ClCompile Include="native-ui\dialogue_template.cpp">
+      <Filter>Source File\native-ui</Filter>
+    </ClCompile>
+    <ClCompile Include="native-ui\font_setting_dialogue.cpp">
+      <Filter>Source File\native-ui</Filter>
+    </ClCompile>
+    <ClCompile Include="native-ui\media_setting_dialogue.cpp">
+      <Filter>Source File\native-ui</Filter>
+    </ClCompile>
+    <ClCompile Include="win_font.cpp">
       <Filter>Source File</Filter>
     </ClCompile>
   </ItemGroup>

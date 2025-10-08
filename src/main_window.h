@@ -12,6 +12,7 @@
 #include "view_manager.h"
 #include "mf_media_player.h"
 #include "lilyan_scene_crafter.h"
+#include "native-ui/font_setting_dialogue.h"
 
 class CMainWindow
 {
@@ -39,36 +40,53 @@ private:
 	LRESULT OnKeyUp(WPARAM wParam, LPARAM lParam);
 	LRESULT OnCommand(WPARAM wParam, LPARAM lParam);
 	LRESULT OnTimer(WPARAM wParam);
+	LRESULT OnMouseMove(WPARAM wParam, LPARAM lParam);
 	LRESULT OnMouseWheel(WPARAM wParam, LPARAM lParam);
 	LRESULT OnLButtonDown(WPARAM wParam, LPARAM lParam);
 	LRESULT OnLButtonUp(WPARAM wParam, LPARAM lParam);
+	LRESULT OnRButtonUp(WPARAM wParam, LPARAM lParam);
 	LRESULT OnMButtonUp(WPARAM wParam, LPARAM lParam);
 
-	enum Menu
+	struct Menu
 	{
-		kOpenFile = 1,
-		kVoiceSetting, kSoundSetting
+		enum
+		{
+			kOpenFile = 1,
+			kVoiceSetting, kSoundSetting, kFontSetting
+		};
 	};
-	enum MenuBar
+	struct MenuBar
 	{
-		kFile, kAudio
+		enum
+		{
+			kFile, kSetting, kFont
+		};
 	};
-	enum EventMessage
+	struct EventMessage
 	{
-		kAudioPlayer = WM_USER + 1
+		enum
+		{
+			kAudioPlayer = WM_USER + 1
+		};
 	};
-	enum Timer
+	struct Timer
 	{
-		kText = 1,
+		enum
+		{
+			kText = 1,
+		};
 	};
 
-	POINT m_CursorPos{};
-	bool m_bLeftDowned = false;
+	POINT m_lastCursorPos{};
+	bool m_wasLeftPressed = false;
+	bool m_hasLeftBeenDragged = false;
+	bool m_wasLeftCombinated = false;
+	bool m_wasRightCombinated = false;
 
 	HMENU m_hMenuBar = nullptr;
-	bool m_bBarHidden = false;
+	bool m_isBarHidden = false;
 
-	bool m_bTextHidden = false;
+	bool m_isTextHidden = false;
 
 	std::vector<std::wstring> m_scriptFilePaths;
 	size_t m_nScriptFileIndex = 0;
@@ -81,8 +99,9 @@ private:
 
 	void MenuOnVoiceSetting();
 	void MenuOnSoundSetting();
+	void MenuOnFontSetting();
 
-	void SwitchWindowStyle();
+	void ToggleWindowBorderStyle();
 
 	bool SetupScenario(const wchar_t* pwzFilePath);
 
@@ -94,6 +113,7 @@ private:
 	std::unique_ptr<CMfMediaPlayer> m_pMfVoicePlayer;
 	std::unique_ptr<CMfMediaPlayer> m_pMfSoundPlayer;
 	std::unique_ptr<CLilyanSceneCrafter> m_pSceneCrafter;
+	std::unique_ptr<CFontSettingDialogue> m_pFontSettingDialogue;
 
 	void ShiftText(bool bForward);
 	void UpdateText();
