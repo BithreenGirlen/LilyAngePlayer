@@ -53,6 +53,7 @@ private:
 		{
 			kOpenFile = 1,
 			kVoiceSetting, kSoundSetting, kFontSetting,
+			kSyncImage,
 			kLabelStartIndex
 		};
 	};
@@ -60,7 +61,7 @@ private:
 	{
 		enum
 		{
-			kFile, kSetting, kFont
+			kFile, kSetting, kImage
 		};
 	};
 	struct EventMessage
@@ -101,8 +102,10 @@ private:
 	void MenuOnVoiceSetting();
 	void MenuOnSoundSetting();
 	void MenuOnFontSetting();
+	void MenuOnSyncImage();
 
 	void ToggleWindowBorderStyle();
+	bool SetMenuCheckState(unsigned int uiMenuIndex, unsigned int uiItemIndex, bool checked) const;
 
 	bool SetupScenario(const wchar_t* pwzFilePath);
 	void JumpScene(size_t nIndex);

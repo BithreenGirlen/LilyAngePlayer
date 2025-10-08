@@ -174,6 +174,7 @@ LRESULT CMainWindow::OnCreate(HWND hWnd)
 	m_pMfVoicePlayer->SetPlaybackWindow(m_hWnd, EventMessage::kAudioPlayer);
 
 	m_pSceneCrafter = std::make_unique<CLilyanSceneCrafter>(m_pD2ImageDrawer->GetD2DeviceContext());
+	SetMenuCheckState(MenuBar::kImage, Menu::kSyncImage, m_pSceneCrafter->IsImageSynced());
 
 	m_pFontSettingDialogue = std::make_unique<CFontSettingDialogue>();
 
@@ -300,6 +301,9 @@ LRESULT CMainWindow::OnCommand(WPARAM wParam, LPARAM lParam)
 		case Menu::kFontSetting:
 			MenuOnFontSetting();
 			break;
+		case Menu::kSyncImage:
+			MenuOnSyncImage();
+			break;
 		default:
 			if (wmId >= Menu::kLabelStartIndex)
 			{
@@ -425,7 +429,14 @@ LRESULT CMainWindow::OnLButtonUp(WPARAM wParam, LPARAM lParam)
 
 		if (iX == 0 && iY == 0)
 		{
-
+			if (m_pSceneCrafter.get() != nullptr)
+			{
+				if (!m_pSceneCrafter->IsImageSynced())
+				{
+					m_pSceneCrafter->ShiftImage();
+					UpdateScreen();
+				}
+			}
 		}
 	}
 
@@ -498,6 +509,8 @@ void CMainWindow::InitialiseMenuBar()
 {
 	HMENU hMenuFile = nullptr;
 	HMENU hMenuSetting = nullptr;
+	HMENU hMenuImage = nullptr;
+
 	HMENU hMenuBar = nullptr;
 	BOOL iRet = FALSE;
 
@@ -505,13 +518,11 @@ void CMainWindow::InitialiseMenuBar()
 
 	hMenuFile = ::CreateMenu();
 	if (hMenuFile == nullptr)goto failed;
-
 	iRet = ::AppendMenuA(hMenuFile, MF_STRING, Menu::kOpenFile, "Open");
 	if (iRet == 0)goto failed;
 
 	hMenuSetting = ::CreateMenu();
 	if (hMenuSetting == nullptr)goto failed;
-
 	iRet = ::AppendMenuA(hMenuSetting, MF_STRING, Menu::kVoiceSetting, "Voice");
 	if (iRet == 0)goto failed;
 	iRet = ::AppendMenuA(hMenuSetting, MF_STRING, Menu::kSoundSetting, "Sound");
@@ -519,12 +530,18 @@ void CMainWindow::InitialiseMenuBar()
 	iRet = ::AppendMenuA(hMenuSetting, MF_STRING, Menu::kFontSetting, "Font");
 	if (iRet == 0)goto failed;
 
+	hMenuImage = ::CreateMenu();
+	if (hMenuFile == nullptr)goto failed;
+	iRet = ::AppendMenuA(hMenuImage, MF_STRING, Menu::kSyncImage, "Sync");
+	if (iRet == 0)goto failed;
+
 	hMenuBar = ::CreateMenu();
 	if (hMenuBar == nullptr) goto failed;
-
 	iRet = ::AppendMenuA(hMenuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(hMenuFile), "File");
 	if (iRet == 0)goto failed;
 	iRet = ::AppendMenuA(hMenuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(hMenuSetting), "Setting");
+	if (iRet == 0)goto failed;
+	iRet = ::AppendMenuA(hMenuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(hMenuImage), "Image");
 	if (iRet == 0)goto failed;
 
 	iRet = ::SetMenu(m_hWnd, hMenuBar);
@@ -544,6 +561,10 @@ failed:
 	if (hMenuSetting != nullptr)
 	{
 		::DestroyMenu(hMenuSetting);
+	}
+	if (hMenuImage != nullptr)
+	{
+		::DestroyMenu(hMenuImage);
 	}
 	if (hMenuBar != nullptr)
 	{
@@ -620,6 +641,19 @@ void CMainWindow::MenuOnFontSetting()
 		}
 	}
 }
+
+void CMainWindow::MenuOnSyncImage()
+{
+	if (m_pSceneCrafter.get() != nullptr)
+	{
+		bool bRet = SetMenuCheckState(MenuBar::kImage, Menu::kSyncImage, !m_pSceneCrafter->IsImageSynced());
+		if (bRet)
+		{
+			m_pSceneCrafter->ToggleImageSync();
+			UpdateScreen();
+		}
+	}
+}
 /*表示形式切り替え*/
 void CMainWindow::ToggleWindowBorderStyle()
 {
@@ -647,6 +681,22 @@ void CMainWindow::ToggleWindowBorderStyle()
 	{
 		m_pViewManager->OnStyleChanged();
 	}
+}
+/* 印状態変更 */
+bool CMainWindow::SetMenuCheckState(unsigned int uiMenuIndex, unsigned int uiItemIndex, bool checked) const
+{
+	HMENU hMenuBar = ::GetMenu(m_hWnd);
+	if (hMenuBar != nullptr)
+	{
+		HMENU hMenu = ::GetSubMenu(hMenuBar, uiMenuIndex);
+		if (hMenu != nullptr)
+		{
+			DWORD ulRet = ::CheckMenuItem(hMenu, uiItemIndex, checked ? MF_CHECKED : MF_UNCHECKED);
+			return ulRet != (DWORD)-1;
+		}
+	}
+
+	return false;
 }
 /*寸劇構築*/
 bool CMainWindow::SetupScenario(const wchar_t* pwzFilePath)

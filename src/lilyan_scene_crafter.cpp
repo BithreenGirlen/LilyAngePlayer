@@ -76,6 +76,25 @@ std::wstring& CLilyanSceneCrafter::GetSceneTitle()
 {
 	return m_wstrSceneTitle;
 }
+
+void CLilyanSceneCrafter::ToggleImageSync()
+{
+	m_isImageSynced ^= true;
+}
+
+bool CLilyanSceneCrafter::IsImageSynced() const
+{
+	return m_isImageSynced;
+}
+
+void CLilyanSceneCrafter::ShiftImage()
+{
+	if (!m_isImageSynced)
+	{
+		++m_nImageIndex;
+		if (m_nImageIndex >= m_images.size())m_nImageIndex = 0;
+	}
+}
 /*場面移行*/
 void CLilyanSceneCrafter::ShiftScene(bool bForward)
 {
@@ -106,10 +125,14 @@ ID2D1Bitmap* CLilyanSceneCrafter::GetCurrentImage()
 {
 	if (m_nSceneIndex < m_sceneData.size())
 	{
-		size_t nImageIndex = m_sceneData[m_nSceneIndex].nImageIndex;
-		if (nImageIndex < m_images.size())
+		if (m_isImageSynced)
 		{
-			return m_images[nImageIndex];
+			m_nImageIndex = m_sceneData[m_nSceneIndex].nImageIndex;
+		}
+
+		if (m_nImageIndex < m_images.size())
+		{
+			return m_images[m_nImageIndex];
 		}
 	}
 
@@ -197,6 +220,7 @@ void CLilyanSceneCrafter::ClearScenarioData()
 	m_nSceneIndex = 0;
 
 	m_images.clear();
+	m_nImageIndex = 0;
 
 	m_wstrSceneTitle.clear();
 

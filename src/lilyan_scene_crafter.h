@@ -23,6 +23,10 @@ public:
 	void GetLargestImageSize(unsigned int* uiWidth, unsigned int* uiHeight);
 	std::wstring& GetSceneTitle();
 
+	void ToggleImageSync();
+	bool IsImageSynced() const;
+	void ShiftImage();
+
 	void ShiftScene(bool bForward);
 	bool HasReachedLastScene();
 
@@ -44,10 +48,13 @@ private:
 	size_t m_nSceneIndex = 0;
 
 	std::vector<CComPtr<ID2D1Bitmap>> m_images;
+	size_t 	m_nImageIndex = 0;
 
 	std::vector<adv::SoundDatum> m_soundData;
 
 	std::vector<adv::LabelDatum> m_labelData;
+
+	bool m_isImageSynced = true;
 
 	void ClearScenarioData();
 	ID2D1Bitmap* ImportWholeImage(const std::wstring& wstrImageFilePath);
