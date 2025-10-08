@@ -17,7 +17,10 @@ public:
 	~CLilyanSceneCrafter();
 
 	bool LoadScenario(const wchar_t* pwzScenarioFilePath);
-	void GetImageSize(unsigned int* uiWidth, unsigned int* uiHeight);
+	bool HasScenarioData() const;
+
+	void GetCurrentImageSize(unsigned int* uiWidth, unsigned int* uiHeight);
+	void GetLargestImageSize(unsigned int* uiWidth, unsigned int* uiHeight);
 	std::wstring& GetSceneTitle();
 
 	void ShiftScene(bool bForward);
@@ -27,6 +30,9 @@ public:
 	std::wstring GetCurrentFormattedText();
 	const wchar_t* GetCurrentVoiceFilePath();
 	const wchar_t* GetCurrentSoundFilePath();
+
+	const std::vector<adv::LabelDatum>& GetLabelData() const;
+	bool JumpToLabel(size_t nLabelIndex);
 private:
 	ID2D1DeviceContext* m_pStoredD2d1DeviceContext = nullptr;
 
@@ -40,6 +46,8 @@ private:
 	std::vector<CComPtr<ID2D1Bitmap>> m_images;
 
 	std::vector<adv::SoundDatum> m_soundData;
+
+	std::vector<adv::LabelDatum> m_labelData;
 
 	void ClearScenarioData();
 	ID2D1Bitmap* ImportWholeImage(const std::wstring& wstrImageFilePath);

@@ -22,7 +22,7 @@ bool CLilyanSceneCrafter::LoadScenario(const wchar_t* pwzScenarioFilePath)
 	ClearScenarioData();
 
 	std::vector<std::wstring> wstrImageFilePaths;
-	lilyan::LoadScenario(pwzScenarioFilePath, m_textData, wstrImageFilePaths, m_sceneData, m_wstrSceneTitle, m_soundData);
+	lilyan::LoadScenario(pwzScenarioFilePath, m_textData, wstrImageFilePaths, m_sceneData, m_wstrSceneTitle, m_soundData, m_labelData);
 	if (!m_wstrSceneTitle.empty() && m_wstrSceneTitle[0] == L';')
 	{
 		m_wstrSceneTitle.erase(0, 1);
@@ -35,8 +35,13 @@ bool CLilyanSceneCrafter::LoadScenario(const wchar_t* pwzScenarioFilePath)
 
 	return !m_images.empty();
 }
+
+bool CLilyanSceneCrafter::HasScenarioData() const
+{
+	return !m_sceneData.empty();
+}
 /*画像寸法取得*/
-void CLilyanSceneCrafter::GetImageSize(unsigned int* uiWidth, unsigned int* uiHeight)
+void CLilyanSceneCrafter::GetCurrentImageSize(unsigned int* uiWidth, unsigned int* uiHeight)
 {
 	if (m_nSceneIndex < m_sceneData.size())
 	{
@@ -48,6 +53,23 @@ void CLilyanSceneCrafter::GetImageSize(unsigned int* uiWidth, unsigned int* uiHe
 			*uiHeight = s.height;
 		}
 	}
+}
+
+void CLilyanSceneCrafter::GetLargestImageSize(unsigned int* uiWidth, unsigned int* uiHeight)
+{
+	unsigned int uiMaxWidth = 0;
+	unsigned int uiMaxHeight = 0;
+
+	for (const auto& pD2Bitmap : m_images)
+	{
+		D2D1_SIZE_U s = pD2Bitmap->GetPixelSize();
+
+		uiMaxWidth = (std::max)(uiMaxWidth, s.width);
+		uiMaxHeight = (std::max)(uiMaxHeight, s.height);;
+	}
+
+	if (uiWidth != nullptr)*uiWidth = uiMaxWidth;
+	if (uiHeight != nullptr)*uiHeight = uiMaxHeight;
 }
 /*題名受け渡し*/
 std::wstring& CLilyanSceneCrafter::GetSceneTitle()
@@ -145,6 +167,27 @@ const wchar_t* CLilyanSceneCrafter::GetCurrentSoundFilePath()
 
 	return nullptr;
 }
+
+const std::vector<adv::LabelDatum>& CLilyanSceneCrafter::GetLabelData() const
+{
+	return m_labelData;
+}
+
+bool CLilyanSceneCrafter::JumpToLabel(size_t nLabelIndex)
+{
+	if (nLabelIndex < m_labelData.size())
+	{
+		const auto& labelDatum = m_labelData[nLabelIndex];
+
+		if (labelDatum.nSceneIndex < m_sceneData.size())
+		{
+			m_nSceneIndex = labelDatum.nSceneIndex;
+
+			return true;
+		}
+	}
+	return false;
+}
 /*消去*/
 void CLilyanSceneCrafter::ClearScenarioData()
 {
@@ -158,6 +201,8 @@ void CLilyanSceneCrafter::ClearScenarioData()
 	m_wstrSceneTitle.clear();
 
 	m_soundData.clear();
+
+	m_labelData.clear();
 }
 
 ID2D1Bitmap* CLilyanSceneCrafter::ImportWholeImage(const std::wstring& wstrImageFilePath)

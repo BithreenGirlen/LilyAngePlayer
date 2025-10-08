@@ -70,28 +70,28 @@ namespace lilyan
 				if (commandType == "CommentScriptLine")
 				{
 					tokenDatum.tokenType = ETokenType::Comment;
-					tokenDatum.strData = commandData.at("commentText").get<std::string>();
+					tokenDatum.strData = commandData.at("commentText");
 				}
 				if (commandType == "PlayVoice")
 				{
 					tokenDatum.tokenType = ETokenType::Voice;
-					tokenDatum.strData = commandData.at("VoicePath").at("value").get<std::string>();
+					tokenDatum.strData = commandData.at("VoicePath").at("value");
 				}
 				else if (commandType == "PrintText")
 				{
 					tokenDatum.tokenType = ETokenType::Text;
 
-					const auto& auctor = commandData.at("AuthorId").at("value").get<std::string>();
+					const std::string& auctor = commandData.at("AuthorId").at("value");
 					if (!auctor.empty())
 					{
 						tokenDatum.strData = auctor;
 						tokenDatum.strData += ":";
 					}
 
-					auto text = commandData.at("Text").at("value").get<std::string>();
+					std::string text = commandData.at("Text").at("value");
 					if (text.empty())
 					{
-						text = commandData.at("Text").at("dynamicValue").at("ValueText").get<std::string>();
+						text = commandData.at("Text").at("dynamicValue").at("ValueText");
 						if (text.empty())continue;
 					}
 
@@ -101,7 +101,7 @@ namespace lilyan
 				else if (commandType == "ModifyBackground")
 				{
 					tokenDatum.tokenType = ETokenType::Bg;
-					tokenDatum.strData = commandData.at("AppearanceAndTransition").at("value").at("name").at("value").get<std::string>();
+					tokenDatum.strData = commandData.at("AppearanceAndTransition").at("value").at("name").at("value");
 				}
 				else if (commandType == "PlaySfx")
 				{
@@ -152,7 +152,7 @@ namespace lilyan
 } /* namespace lilyan */
 
 /*台本読み込み*/
-bool lilyan::LoadScenario(const std::wstring& wstrScriptFilePath, std::vector<adv::TextDatum>& textData, std::vector<std::wstring>& imageFilePaths, std::vector<adv::SceneDatum>& sceneData, std::wstring& wstrTitle, std::vector<adv::SoundDatum>& soundData)
+bool lilyan::LoadScenario(const std::wstring& wstrScriptFilePath, std::vector<adv::TextDatum>& textData, std::vector<std::wstring>& imageFilePaths, std::vector<adv::SceneDatum>& sceneData, std::wstring& wstrTitle, std::vector<adv::SoundDatum>& soundData, std::vector <adv::LabelDatum>& labelData)
 {
 	std::string strFile = win_filesystem::LoadFileAsString(wstrScriptFilePath.c_str());
 	if (strFile.empty())return false;
@@ -176,6 +176,7 @@ bool lilyan::LoadScenario(const std::wstring& wstrScriptFilePath, std::vector<ad
 	std::wstring wstrVoiceFileNameBuffer;
 	std::wstring wstrSoundFileNameBuffer;
 	adv::SceneDatum sceneDatumBuffer;
+	std::wstring labelBuffer;
 
 	for (const auto& tokenDatum : tokenData)
 	{
@@ -226,6 +227,12 @@ bool lilyan::LoadScenario(const std::wstring& wstrScriptFilePath, std::vector<ad
 
 			sceneDatumBuffer.nTextIndex = textData.size() - 1;
 			sceneData.push_back(sceneDatumBuffer);
+
+			if (!labelBuffer.empty())
+			{
+				labelData.emplace_back(adv::LabelDatum{ labelBuffer, sceneData.size() - 1 });
+				labelBuffer.clear();
+			}
 		}
 		else if (tokenType == ETokenType::Bg)
 		{
@@ -254,6 +261,8 @@ bool lilyan::LoadScenario(const std::wstring& wstrScriptFilePath, std::vector<ad
 
 			imageFilePaths.push_back(wstrBgFilePaths[ulIndex]);
 			sceneDatumBuffer.nImageIndex = imageFilePaths.size() - 1;
+
+			labelBuffer = text_utility::ExtractFileName(wstrBgFilePaths[ulIndex]);
 		}
 		else if(tokenType == ETokenType::Sound)
 		{

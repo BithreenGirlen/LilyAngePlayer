@@ -301,6 +301,10 @@ LRESULT CMainWindow::OnCommand(WPARAM wParam, LPARAM lParam)
 			MenuOnFontSetting();
 			break;
 		default:
+			if (wmId >= Menu::kLabelStartIndex)
+			{
+				JumpScene(static_cast<size_t>(wmId - Menu::kLabelStartIndex));
+			}
 			break;
 		}
 	}
@@ -366,9 +370,12 @@ LRESULT CMainWindow::OnMouseWheel(WPARAM wParam, LPARAM lParam)
 
 	if (wKey == 0)
 	{
-		if (m_pViewManager.get() != nullptr)
+		if (m_pSceneCrafter.get() != nullptr && m_pSceneCrafter->HasScenarioData())
 		{
-			m_pViewManager->Rescale(iScroll > 0);
+			if (m_pViewManager.get() != nullptr)
+			{
+				m_pViewManager->Rescale(iScroll > 0);
+			}
 		}
 	}
 	else if (wKey == MK_LBUTTON)
@@ -405,6 +412,8 @@ LRESULT CMainWindow::OnLButtonUp(WPARAM wParam, LPARAM lParam)
 		input.type = INPUT_KEYBOARD;
 		input.ki.wVk = VK_DOWN;
 		::SendInput(1, &input, sizeof(input));
+
+		m_wasRightCombinated = true;
 	}
 
 	if (usKey == 0 && m_wasLeftPressed)
@@ -433,6 +442,30 @@ LRESULT CMainWindow::OnRButtonUp(WPARAM wParam, LPARAM lParam)
 		return 0;
 	}
 
+	WORD usKey = LOWORD(wParam);
+	if (usKey == 0)
+	{
+		if (m_pSceneCrafter.get() != nullptr && m_pSceneCrafter->HasScenarioData())
+		{
+			const auto& labelData = m_pSceneCrafter->GetLabelData();
+			if (labelData.empty())return 0;
+
+			HMENU hPopupMenu = ::CreatePopupMenu();
+			if (hPopupMenu != nullptr)
+			{
+				for (size_t i = 0; i < labelData.size(); ++i)
+				{
+					::AppendMenuW(hPopupMenu, MF_STRING, Menu::kLabelStartIndex + i, labelData[i].wstrCaption.c_str());
+				}
+
+				POINT point{};
+				::GetCursorPos(&point);
+				::TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, 0, m_hWnd, nullptr);
+				::DestroyMenu(hPopupMenu);
+			}
+		}
+	}
+
 	return 0;
 }
 /*WM_MBUTTONUP*/
@@ -442,15 +475,20 @@ LRESULT CMainWindow::OnMButtonUp(WPARAM wParam, LPARAM lParam)
 
 	if (usKey == 0)
 	{
-		if (m_pViewManager.get() != nullptr)
+		if (m_pSceneCrafter.get() != nullptr && m_pSceneCrafter->HasScenarioData())
 		{
-			m_pViewManager->ResetZoom();
+			if (m_pViewManager.get() != nullptr)
+			{
+				m_pViewManager->ResetZoom();
+			}
 		}
 	}
 
 	if (usKey == MK_RBUTTON)
 	{
 		ToggleWindowBorderStyle();
+
+		m_wasRightCombinated = true;
 	}
 
 	return 0;
@@ -585,6 +623,8 @@ void CMainWindow::MenuOnFontSetting()
 /*表示形式切り替え*/
 void CMainWindow::ToggleWindowBorderStyle()
 {
+	if (m_pSceneCrafter.get() == nullptr || !m_pSceneCrafter->HasScenarioData())return;
+
 	RECT rect;
 	::GetWindowRect(m_hWnd, &rect);
 	LONG lStyle = ::GetWindowLong(m_hWnd, GWL_STYLE);
@@ -620,7 +660,7 @@ bool CMainWindow::SetupScenario(const wchar_t* pwzFilePath)
 		{
 			unsigned int uiWidth = 0;
 			unsigned int uiHeight = 0;
-			m_pSceneCrafter->GetImageSize(&uiWidth, &uiHeight);
+			m_pSceneCrafter->GetCurrentImageSize(&uiWidth, &uiHeight);
 
 			if (m_pViewManager != nullptr)
 			{
@@ -645,6 +685,15 @@ bool CMainWindow::SetupScenario(const wchar_t* pwzFilePath)
 	}
 
 	return bRet;
+}
+
+void CMainWindow::JumpScene(size_t nIndex)
+{
+	if (m_pSceneCrafter.get() != nullptr && m_pSceneCrafter->HasScenarioData())
+	{
+		m_pSceneCrafter->JumpToLabel(nIndex);
+		UpdateText();
+	}
 }
 /*再描画要求*/
 void CMainWindow::UpdateScreen()

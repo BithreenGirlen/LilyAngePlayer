@@ -52,7 +52,8 @@ private:
 		enum
 		{
 			kOpenFile = 1,
-			kVoiceSetting, kSoundSetting, kFontSetting
+			kVoiceSetting, kSoundSetting, kFontSetting,
+			kLabelStartIndex
 		};
 	};
 	struct MenuBar
@@ -104,6 +105,7 @@ private:
 	void ToggleWindowBorderStyle();
 
 	bool SetupScenario(const wchar_t* pwzFilePath);
+	void JumpScene(size_t nIndex);
 
 	void UpdateScreen();
 

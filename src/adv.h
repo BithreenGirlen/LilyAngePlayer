@@ -1,4 +1,4 @@
-#ifndef ADV_H_
+﻿#ifndef ADV_H_
 #define ADV_H_
 
 #include <string>
@@ -21,6 +21,12 @@ namespace adv
 	{
 		size_t nSceneIndex = 0;
 		std::wstring wstrSoundFilePath;
+	};
+
+	struct LabelDatum
+	{
+		std::wstring wstrCaption;
+		size_t nSceneIndex = 0;
 	};
 }
 
