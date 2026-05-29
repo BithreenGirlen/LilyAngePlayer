@@ -1,5 +1,7 @@
 ﻿
 
+#include <wincodec.h>
+
 #include "lilyan_scene_crafter.h"
 
 #include "lilyan.h"
@@ -31,6 +33,8 @@ bool CLilyanSceneCrafter::loadScenario(const std::wstring& scenarioFilePath)
 	{
 		importWholeImage(imageFilePath);
 	}
+
+	prepareScene();
 
 	return !m_images.empty();
 }
@@ -113,6 +117,8 @@ void CLilyanSceneCrafter::shiftScene(bool forward)
 			m_nSceneIndex = m_sceneData.size() - 1;
 		}
 	}
+
+	prepareScene();
 }
 /* 最終場面是否 */
 bool CLilyanSceneCrafter::hasReachedLastScene()
@@ -138,21 +144,9 @@ ID2D1Bitmap* CLilyanSceneCrafter::getCurrentImage()
 	return nullptr;
 }
 /* 文章生成 */
-std::wstring CLilyanSceneCrafter::getCurrentFormattedText()
+const std::wstring& CLilyanSceneCrafter::getCurrentFormattedText() const noexcept
 {
-	std::wstring wstr;
-	if (m_nSceneIndex < m_sceneData.size())
-	{
-		size_t nTextIndex = m_sceneData[m_nSceneIndex].nTextIndex;
-		if (nTextIndex < m_textData.size())
-		{
-			wstr = m_textData[nTextIndex].message;
-			if (!wstr.empty() && wstr.back() != L'\n')wstr.push_back(L'\n');
-			wstr += std::to_wstring(nTextIndex + 1) + L"/" + std::to_wstring(m_textData.size());
-		}
-	}
-
-	return wstr;
+	return m_formattedText;
 }
 /* 現在の音声ファイル経路受け渡し */
 const wchar_t* CLilyanSceneCrafter::getCurrentVoiceFilePath()
@@ -173,8 +167,7 @@ const wchar_t* CLilyanSceneCrafter::getCurrentSoundFilePath()
 {
 	const auto iter = std::find_if
 	(
-		m_soundData.begin(), m_soundData.end(),
-		[this](adv::SoundDatum& soundDatum)
+		m_soundData.begin(), m_soundData.end(), [this](const adv::SoundDatum& soundDatum)
 		{
 			return soundDatum.nSceneIndex == m_nSceneIndex;
 		}
@@ -182,7 +175,7 @@ const wchar_t* CLilyanSceneCrafter::getCurrentSoundFilePath()
 
 	if (iter != m_soundData.cend())
 	{
-		return m_soundData[std::distance(m_soundData.begin(), iter)].soundFilePath.c_str();
+		return iter->soundFilePath.c_str();
 	}
 
 	return nullptr;
@@ -202,53 +195,75 @@ bool CLilyanSceneCrafter::jumpToLabel(size_t nLabelIndex)
 		if (labelDatum.nSceneIndex < m_sceneData.size())
 		{
 			m_nSceneIndex = labelDatum.nSceneIndex;
+			prepareScene();
 
 			return true;
 		}
 	}
+
 	return false;
 }
 /* 消去 */
 void CLilyanSceneCrafter::clearScenarioData()
 {
+	m_sceneTitle.clear();
 	m_textData.clear();
-
 	m_sceneData.clear();
 	m_nSceneIndex = 0;
+	m_soundData.clear();
+	m_labelData.clear();
 
 	m_images.clear();
 	m_nImageIndex = 0;
 
-	m_sceneTitle.clear();
-
-	m_soundData.clear();
-
-	m_labelData.clear();
+	m_formattedText.clear();
 }
 
-ID2D1Bitmap* CLilyanSceneCrafter::importWholeImage(const std::wstring& iImageFilePath)
+ID2D1Bitmap* CLilyanSceneCrafter::importWholeImage(const std::wstring& imageFilePath)
 {
 	ID2D1Bitmap* p = nullptr;
-
-	win_image::SImageFrame imageFrame{};
-	bool bRet = win_image::LoadImageToMemory(iImageFilePath.c_str(), &imageFrame);
-	if (bRet)
+	if (m_pStoredD2d1DeviceContext != nullptr)
 	{
-		CComPtr<ID2D1Bitmap> pD2d1Bitmap;
-
-		HRESULT hr = m_pStoredD2d1DeviceContext->CreateBitmap(
-			D2D1::SizeU(imageFrame.uiWidth, imageFrame.uiHeight),
-			D2D1::BitmapProperties(D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE)),
-			&pD2d1Bitmap);
-
-		D2D1_RECT_U rc = { 0, 0, imageFrame.uiWidth, imageFrame.uiHeight };
-		hr = pD2d1Bitmap->CopyFromMemory(&rc, imageFrame.pixels.data(), imageFrame.uiStride);
-		if (SUCCEEDED(hr))
+		CComPtr<IWICBitmap> pWicBitmap;
+		win_image::LoadImageToWicBitmap(imageFilePath.data(), reinterpret_cast<void**>(&pWicBitmap));
+		if (pWicBitmap != nullptr)
 		{
-			m_images.push_back(std::move(pD2d1Bitmap));
-			p = m_images.back().p;
+			CComPtr<ID2D1Bitmap> pD2d1Bitmap;
+			HRESULT hr = m_pStoredD2d1DeviceContext->CreateBitmapFromWicBitmap
+			(
+				pWicBitmap,
+				D2D1::BitmapProperties(D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE)),
+				&pD2d1Bitmap
+			);
+			if (SUCCEEDED(hr))
+			{
+				m_images.push_back(std::move(pD2d1Bitmap));
+				p = m_images.back().p;
+			}
 		}
 	}
 
 	return p;
+}
+
+void CLilyanSceneCrafter::prepareScene()
+{
+	prepareText();
+}
+
+void CLilyanSceneCrafter::prepareText()
+{
+	if (m_nSceneIndex < m_sceneData.size())
+	{
+		size_t nTextIndex = m_sceneData[m_nSceneIndex].nTextIndex;
+		if (nTextIndex < m_textData.size())
+		{
+			m_formattedText.assign(m_textData[nTextIndex].message);
+			if (!m_formattedText.empty() && m_formattedText.back() != L'\n')m_formattedText.push_back(L'\n');
+
+			wchar_t buffer[64]{};
+			::swprintf_s(buffer, L"%zu/%zu", nTextIndex + 1, m_textData.size());
+			m_formattedText += buffer;
+		}
+	}
 }

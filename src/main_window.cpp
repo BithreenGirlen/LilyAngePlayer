@@ -232,7 +232,7 @@ LRESULT CMainWindow::onPaint()
 
 		if (!m_isTextHidden)
 		{
-			std::wstring message = m_pSceneCrafter->getCurrentFormattedText();
+			const std::wstring& message = m_pSceneCrafter->getCurrentFormattedText();
 			m_pD2TextWriter->outLinedDraw(message.c_str(), message.size());
 		}
 		m_pD2ImageDrawer->display();
