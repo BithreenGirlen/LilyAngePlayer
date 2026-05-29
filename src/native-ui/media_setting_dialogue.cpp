@@ -66,13 +66,13 @@ int CMediaSettingDialogue::messageLoop()
 
 	for (;;)
 	{
-		BOOL bRet = ::GetMessageW(&msg, 0, 0, 0);
-		if (bRet > 0)
+		BOOL iRet = ::GetMessageW(&msg, 0, 0, 0);
+		if (iRet > 0)
 		{
 			::TranslateMessage(&msg);
 			::DispatchMessageW(&msg);
 		}
-		else if (bRet == 0)
+		else if (iRet == 0)
 		{
 			return static_cast<int>(msg.wParam);
 		}
@@ -84,7 +84,7 @@ int CMediaSettingDialogue::messageLoop()
 
 	return 0;
 }
-/*C CALLBACK*/
+/* C CALLBACK */
 LRESULT CMediaSettingDialogue::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	CMediaSettingDialogue* pThis = nullptr;
@@ -103,7 +103,7 @@ LRESULT CMediaSettingDialogue::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
 
 	return ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
-/*メッセージ処理*/
+/* メッセージ処理 */
 LRESULT CMediaSettingDialogue::handleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
@@ -130,7 +130,7 @@ LRESULT CMediaSettingDialogue::handleMessage(HWND hWnd, UINT uMsg, WPARAM wParam
 
 	return ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
-/*WM_CREATE*/
+/* WM_CREATE */
 LRESULT CMediaSettingDialogue::onCreate(HWND hWnd)
 {
 	m_hWnd = hWnd;
@@ -155,13 +155,13 @@ LRESULT CMediaSettingDialogue::onCreate(HWND hWnd)
 
 	return 0;
 }
-/*WM_DESTROY*/
+/* WM_DESTROY */
 LRESULT CMediaSettingDialogue::onDestroy()
 {
 	::PostQuitMessage(0);
 	return 0;
 }
-/*WM_CLOSE*/
+/* WM_CLOSE */
 LRESULT CMediaSettingDialogue::onClose()
 {
 	HWND hOwnerWnd = ::GetWindow(m_hWnd, GW_OWNER);
@@ -173,7 +173,7 @@ LRESULT CMediaSettingDialogue::onClose()
 
 	return 0;
 }
-/*WM_PAINT*/
+/* WM_PAINT */
 LRESULT CMediaSettingDialogue::onPaint()
 {
 	PAINTSTRUCT ps;
@@ -183,7 +183,7 @@ LRESULT CMediaSettingDialogue::onPaint()
 
 	return 0;
 }
-/*WM_SIZE*/
+/* WM_SIZE */
 LRESULT CMediaSettingDialogue::onSize()
 {
 	RECT rect;
@@ -194,17 +194,33 @@ LRESULT CMediaSettingDialogue::onSize()
 	long spaceX = clientWidth / 96 * 10;
 	long spaceY = clientHeight / 96;
 
-	long textSpace = Constants::kFontSize;
+	int fontHeight = static_cast<int>(Constants::kFontSize * ::GetDpiForSystem() / 96.f);
 
-	::MoveWindow(m_volumeIntSlider.getHwnd(), spaceX, spaceY + textSpace, clientWidth / 2 - spaceX * 2, clientHeight - spaceY * 2 - textSpace, TRUE);
-	::MoveWindow(m_volumeStatic.getHwnd(), spaceX, spaceY, Constants::kTextWidth, Constants::kFontSize, TRUE);
+	long x = spaceX;
+	long y = spaceY + fontHeight;
+	long w = clientWidth / 2 - spaceX * 2;
+	long h = clientHeight - spaceY * 2 - fontHeight;
+	::MoveWindow(m_volumeIntSlider.getHwnd(), x, y, w, h, TRUE);
 
-	::MoveWindow(m_rateFloatSlider.getHwnd(), clientWidth / 2 + spaceX, spaceY + textSpace, clientWidth / 2 - spaceX * 2, clientHeight - spaceY * 2 - textSpace, TRUE);
-	::MoveWindow(m_rateStatic.getHwnd(), clientWidth / 2 + spaceX, spaceY, Constants::kTextWidth, Constants::kFontSize, TRUE);
+	y = spaceY;
+	w = Constants::kTextWidth;
+	h = fontHeight;
+	::MoveWindow(m_volumeStatic.getHwnd(), x, y, w, h, TRUE);
+
+	x = clientWidth / 2 + spaceX;
+	y = spaceY + fontHeight;
+	w = clientWidth / 2 - spaceX * 2;
+	h = clientHeight - spaceY * 2 - fontHeight;
+	::MoveWindow(m_rateFloatSlider.getHwnd(), x, y, w, h, TRUE);
+
+	y = spaceY;
+	w = Constants::kTextWidth;
+	h = fontHeight;
+	::MoveWindow(m_rateStatic.getHwnd(), x, y, w, h, TRUE);
 
 	return 0;
 }
-/*WM_NOTIFY*/
+/* WM_NOTIFY */
 LRESULT CMediaSettingDialogue::onNotify(WPARAM wParam, LPARAM lParam)
 {
 	LPNMHDR pNmhdr = reinterpret_cast<LPNMHDR>(lParam);
@@ -220,23 +236,23 @@ LRESULT CMediaSettingDialogue::onNotify(WPARAM wParam, LPARAM lParam)
 	}
 	return 0;
 }
-/*WM_COMMAND*/
+/* WM_COMMAND */
 LRESULT CMediaSettingDialogue::onCommand(WPARAM wParam, LPARAM lParam)
 {
 	int id = LOWORD(wParam);
 	int msgSource = LOWORD(lParam);
 	if (msgSource == 0)
 	{
-		/*Menus*/
+		/* Menus */
 	}
 	else
 	{
-		/*Controls*/
+		/* Controls */
 	}
 
 	return 0;
 }
-/*WM_VSCROLL*/
+/* WM_VSCROLL */
 LRESULT CMediaSettingDialogue::onVScroll(WPARAM wParam, LPARAM lParam)
 {
 	CMfMediaPlayer* pPlayer = static_cast<CMfMediaPlayer*>(m_pMediaPlayer);
@@ -252,8 +268,7 @@ LRESULT CMediaSettingDialogue::onVScroll(WPARAM wParam, LPARAM lParam)
 				pPlayer->setCurrentVolume(volume);
 			}
 		}
-
-		if (hScroll == m_rateFloatSlider.getHwnd())
+		else if (hScroll == m_rateFloatSlider.getHwnd())
 		{
 			double playbackRate = m_rateFloatSlider.getPosition();
 			if (playbackRate != pPlayer->getCurrentRate())
@@ -265,15 +280,15 @@ LRESULT CMediaSettingDialogue::onVScroll(WPARAM wParam, LPARAM lParam)
 
 	return 0;
 }
-/*音量調整・再生速度変更スライダ作成*/
+/* 音量調整・再生速度変更スライダ作成 */
 void CMediaSettingDialogue::createSliders()
 {
 	m_volumeIntSlider.create(L"", m_hWnd, reinterpret_cast<HMENU>(Controls::kVolumeSlider), 0, 100, 20, true);
-	m_rateFloatSlider.create(L"", m_hWnd, reinterpret_cast<HMENU>(Controls::kRateSkuder), 0.5f, 2.5f, 0.1f, 20, true);
+	m_rateFloatSlider.create(L"", m_hWnd, reinterpret_cast<HMENU>(Controls::kRateSlider), 0.5f, 2.5f, 0.1f, 20, true);
 
 	setSliderPosition();
 }
-/*現在値取得・表示*/
+/* 現在値取得・表示 */
 void CMediaSettingDialogue::setSliderPosition()
 {
 	CMfMediaPlayer* pPlayer = static_cast<CMfMediaPlayer*>(m_pMediaPlayer);

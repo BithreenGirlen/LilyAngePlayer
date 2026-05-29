@@ -33,7 +33,7 @@ private:
 	LRESULT onVScroll(WPARAM wParam, LPARAM lParam);
 
 	enum Constants { kFontSize = 16, kTextWidth = 70 };
-	enum Controls { kVolumeSlider = 1, kRateSkuder };
+	enum Controls { kVolumeSlider = 1, kRateSlider };
 	HFONT m_hFont = nullptr;
 
 	CSlider m_volumeIntSlider;
