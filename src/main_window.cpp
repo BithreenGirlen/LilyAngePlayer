@@ -210,7 +210,25 @@ LRESULT CMainWindow::onPaint()
 	ID2D1Bitmap* pD2d1Bitmap = m_pSceneCrafter->getCurrentImage();
 	if (pD2d1Bitmap != nullptr)
 	{
-		m_pD2ImageDrawer->draw(pD2d1Bitmap, { m_pViewManager->getOffsetX(), m_pViewManager->getOffsetY() }, m_pViewManager->getScale());
+		RECT rc;
+		::GetClientRect(m_hWnd, &rc);
+
+		int targetWidth = rc.right - rc.left;
+		int targetHeight = rc.bottom - rc.top;
+
+		D2D1_SIZE_U srcSize = pD2d1Bitmap->GetPixelSize();
+
+		const float fScale = m_pViewManager->getScale();
+		const float fX = (srcSize.width * fScale - targetWidth) / 2 + m_pViewManager->offsetX() / 2;
+		const float fY = (srcSize.height * fScale - targetHeight) / 2 + m_pViewManager->offsetY() / 2;
+
+		const D2D1_MATRIX_3X2_F scaleMatrix = D2D1::Matrix3x2F::Scale(fScale, fScale);
+		const D2D1_MATRIX_3X2_F translateMatrix = D2D1::Matrix3x2F::Translation(-fX, -fY);
+		const D2D1_MATRIX_3X2_F transformMatrix = scaleMatrix * translateMatrix;
+
+		m_pD2ImageDrawer->getD2DeviceContext()->SetTransform(transformMatrix);
+		m_pD2ImageDrawer->draw(pD2d1Bitmap);
+		m_pD2ImageDrawer->getD2DeviceContext()->SetTransform(D2D1::Matrix3x2F::Identity());
 
 		if (!m_isTextHidden)
 		{
@@ -351,7 +369,7 @@ LRESULT CMainWindow::onMouseMove(WPARAM wParam, LPARAM lParam)
 		{
 			if (m_pViewManager != nullptr)
 			{
-				m_pViewManager->setOffset(iX, iY);
+				m_pViewManager->addOffset(iX, iY);
 				updateScreen();
 			}
 		}
@@ -488,7 +506,7 @@ LRESULT CMainWindow::onMButtonUp(WPARAM wParam, LPARAM lParam)
 		{
 			if (m_pViewManager.get() != nullptr)
 			{
-				m_pViewManager->resetZoom();
+				m_pViewManager->resetScale();
 			}
 		}
 	}
@@ -651,8 +669,14 @@ void CMainWindow::toggleWindowBorderStyle()
 
 	if (m_isBarHidden)
 	{
+		MONITORINFO monitorInfo{ .cbSize = sizeof(MONITORINFO) };
+		if (HMONITOR hMonitor = ::MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST); hMonitor != nullptr)
+		{
+			[[maybe_unused]] BOOL iRet = ::GetMonitorInfoW(hMonitor, &monitorInfo);
+		}
+
 		::SetWindowLong(m_hWnd, GWL_STYLE, lStyle & ~WS_CAPTION & ~WS_SYSMENU);
-		::SetWindowPos(m_hWnd, nullptr, 0, 0, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER);
+		::SetWindowPos(m_hWnd, nullptr, monitorInfo.rcMonitor.left, monitorInfo.rcMonitor.top, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER);
 		::SetMenu(m_hWnd, nullptr);
 	}
 	else
@@ -661,7 +685,7 @@ void CMainWindow::toggleWindowBorderStyle()
 		::SetMenu(m_hWnd, m_hMenuBar);
 	}
 
-	if (m_pViewManager.get() != nullptr)
+	if (m_pViewManager != nullptr)
 	{
 		m_pViewManager->onStyleChanged();
 	}
@@ -698,7 +722,7 @@ bool CMainWindow::setupScenario(const std::wstring& filePath)
 			if (m_pViewManager != nullptr)
 			{
 				m_pViewManager->setBaseSize(width, height);
-				m_pViewManager->resetZoom();
+				m_pViewManager->resetScale();
 			}
 
 			std::wstring windowTitle = m_pSceneCrafter->getSceneTitle();
