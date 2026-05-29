@@ -71,7 +71,7 @@ Assets
 | 右クリック | 場面遷移メニュー表示。 |
 | 右押し + ホイール回転 | 文章送り・戻し。 |
 | 右押し + 中クリック | 窓枠消去・表示。消去時にはモニタ原点位置に移動。 |
-| 右押し + 左クリック | 窓移動。 窓枠消去時のみ動作。|
+| 右押し + 左クリック | 窓移動開始。左クリックで移動終了。窓枠消去時のみ動作。|
 
 ## キーボード機能
 
@@ -86,7 +86,7 @@ Assets
 | <kbd>＜</kbd> | 文章戻し。 |
 
 ## 外部ライブラリ
-- [JSON for Modern C++ v3.11.3](https://github.com/nlohmann/json/releases/tag/v3.11.3)
+- [JSON for Modern C++ v3.12.0](https://github.com/nlohmann/json/releases/tag/v3.12.0)
 
 ## 構築方法
 1. `src/deps/CMakeLists.txt`を実行して外部ライブラリを取得。
