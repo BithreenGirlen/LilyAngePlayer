@@ -7,7 +7,9 @@
 #include "win_filesystem.h"
 #include "win_dialogue.h"
 #include "native-ui/media_setting_dialogue.h"
+#include "native-ui/window_menu.h"
 #include "text_utility.h"
+#include "path_utility.h"
 
 CMainWindow::CMainWindow()
 {
@@ -19,54 +21,49 @@ CMainWindow::~CMainWindow()
 
 }
 
-bool CMainWindow::Create(HINSTANCE hInstance, const wchar_t* pwzWindowName)
+bool CMainWindow::create(HINSTANCE hInstance, const wchar_t* windowName)
 {
 	WNDCLASSEXW wcex{};
 
 	wcex.cbSize = sizeof(WNDCLASSEX);
 
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
-	wcex.lpfnWndProc = WindowProc;
+	wcex.lpfnWndProc = &WindowProc;
 	wcex.cbClsExtra = 0;
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
-	//wcex.hIcon = ::LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON_APP));
 	wcex.hCursor = ::LoadCursor(nullptr, IDC_ARROW);
 	wcex.hbrBackground = ::GetSysColorBrush(COLOR_BTNFACE);
-	//wcex.lpszMenuName = MAKEINTRESOURCE(IDI_ICON_APP);
-	wcex.lpszClassName = m_swzClassName;
-	//wcex.hIconSm = ::LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_ICON_APP));
+	wcex.lpszClassName = m_className;
 
 	if (::RegisterClassExW(&wcex))
 	{
 		m_hInstance = hInstance;
 
-		UINT uiDpi = ::GetDpiForSystem();
-		int iWindowWidth = ::MulDiv(200, uiDpi, USER_DEFAULT_SCREEN_DPI);
-		int iWindowHeight = ::MulDiv(200, uiDpi, USER_DEFAULT_SCREEN_DPI);
+		UINT dpi = ::GetDpiForSystem();
+		int windowWidth = ::MulDiv(200, dpi, USER_DEFAULT_SCREEN_DPI);
+		int windowHeight = ::MulDiv(200, dpi, USER_DEFAULT_SCREEN_DPI);
 
-		m_hWnd = ::CreateWindowW(m_swzClassName, pwzWindowName, WS_OVERLAPPEDWINDOW & ~WS_MINIMIZEBOX & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME,
-			CW_USEDEFAULT, CW_USEDEFAULT, iWindowWidth, iWindowHeight, nullptr, nullptr, hInstance, this);
+		m_hWnd = ::CreateWindowW(m_className, windowName, WS_OVERLAPPEDWINDOW & ~WS_MINIMIZEBOX & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME,
+			CW_USEDEFAULT, CW_USEDEFAULT, windowWidth, windowHeight, nullptr, nullptr, hInstance, this);
 		if (m_hWnd != nullptr)
 		{
 			return true;
 		}
 		else
 		{
-			std::wstring wstrMessage = L"CreateWindowExW failed; code: " + std::to_wstring(::GetLastError());
-			::MessageBoxW(nullptr, wstrMessage.c_str(), L"Error", MB_ICONERROR);
+			showErrorMessageBox(L"CreateWindowExW failed; code: %ul", ::GetLastError());
 		}
 	}
 	else
 	{
-		std::wstring wstrMessage = L"RegisterClassW failed; code: " + std::to_wstring(::GetLastError());
-		::MessageBoxW(nullptr, wstrMessage.c_str(), L"Error", MB_ICONERROR);
+		showErrorMessageBox(L"RegisterClassW failed; code: %ul", ::GetLastError());
 	}
 
 	return false;
 }
 
-int CMainWindow::MessageLoop()
+int CMainWindow::messageLoop()
 {
 	MSG msg;
 
@@ -80,20 +77,19 @@ int CMainWindow::MessageLoop()
 		}
 		else if (bRet == 0)
 		{
-			/*ループ終了*/
+			/* ループ終了 */
 			return static_cast<int>(msg.wParam);
 		}
 		else
 		{
-			/*ループ異常*/
-			std::wstring wstrMessage = L"GetMessageW failed; code: " + std::to_wstring(::GetLastError());
-			::MessageBoxW(nullptr, wstrMessage.c_str(), L"Error", MB_ICONERROR);
+			/* ループ異常 */
+			showErrorMessageBox(L"GetMessageW failed; code: %ul", ::GetLastError());
 			return -1;
 		}
 	}
 	return 0;
 }
-/*C CALLBACK*/
+/* C CALLBACK */
 LRESULT CMainWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	CMainWindow* pThis = nullptr;
@@ -107,48 +103,48 @@ LRESULT CMainWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	pThis = reinterpret_cast<CMainWindow*>(::GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	if (pThis != nullptr)
 	{
-		return pThis->HandleMessage(hWnd, uMsg, wParam, lParam);
+		return pThis->handleMessage(hWnd, uMsg, wParam, lParam);
 	}
 
 	return ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
-/*メッセージ処理*/
-LRESULT CMainWindow::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+/* メッセージ処理 */
+LRESULT CMainWindow::handleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
 	case WM_CREATE:
-		return OnCreate(hWnd);
+		return onCreate(hWnd);
 	case WM_DESTROY:
-		return OnDestroy();
+		return onDestroy();
 	case WM_CLOSE:
-		return OnClose();
+		return onClose();
 	case WM_PAINT:
-		return OnPaint();
+		return onPaint();
 	case WM_ERASEBKGND:
 		return 1;
 	case WM_KEYDOWN:
-		return OnKeyDown(wParam, lParam);
+		return onKeyDown(wParam, lParam);
 	case WM_KEYUP:
-		return OnKeyUp(wParam, lParam);
+		return onKeyUp(wParam, lParam);
 	case WM_COMMAND:
-		return OnCommand(wParam, lParam);
+		return onCommand(wParam, lParam);
 	case WM_TIMER:
-		return OnTimer(wParam);
+		return onTimer(wParam);
 	case WM_MOUSEMOVE:
-		return OnMouseMove(wParam, lParam);
+		return onMouseMove(wParam, lParam);
 	case WM_MOUSEWHEEL:
-		return OnMouseWheel(wParam, lParam);
+		return onMouseWheel(wParam, lParam);
 	case WM_LBUTTONDOWN:
-		return OnLButtonDown(wParam, lParam);
+		return onLButtonDown(wParam, lParam);
 	case WM_LBUTTONUP:
-		return OnLButtonUp(wParam, lParam);
+		return onLButtonUp(wParam, lParam);
 	case WM_RBUTTONUP:
-		return OnRButtonUp(wParam, lParam);
+		return onRButtonUp(wParam, lParam);
 	case WM_MBUTTONUP:
-		return OnMButtonUp(wParam, lParam);
+		return onMButtonUp(wParam, lParam);
 	case EventMessage::kAudioPlayer:
-		OnAudioPlayerEvent(static_cast<unsigned long>(lParam));
+		onAudioPlayerEvent(static_cast<unsigned long>(lParam));
 		break;
 	default:
 		break;
@@ -156,49 +152,49 @@ LRESULT CMainWindow::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 
 	return ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
-/*WM_CREATE*/
-LRESULT CMainWindow::OnCreate(HWND hWnd)
+/* WM_CREATE */
+LRESULT CMainWindow::onCreate(HWND hWnd)
 {
 	m_hWnd = hWnd;
 
-	InitialiseMenuBar();
+	initialiseMenuBar();
 
 	m_pD2ImageDrawer = std::make_unique<CD2ImageDrawer>(m_hWnd);
 
-	m_pD2TextWriter = std::make_unique<CD2TextWriter>(m_pD2ImageDrawer->GetD2Factory(), m_pD2ImageDrawer->GetD2DeviceContext());
-	m_pD2TextWriter->SetupOutLinedDrawing(L"C:\\Windows\\Fonts\\yumindb.ttf");
+	m_pD2TextWriter = std::make_unique<CD2TextWriter>(m_pD2ImageDrawer->getD2Factory(), m_pD2ImageDrawer->getD2DeviceContext());
+	m_pD2TextWriter->setupOutLinedDrawing(L"C:\\Windows\\Fonts\\yumindb.ttf");
 
 	m_pViewManager = std::make_unique<CViewManager>(m_hWnd);
 
 	m_pMfVoicePlayer = std::make_unique<CMfMediaPlayer>();
-	m_pMfVoicePlayer->SetPlaybackWindow(m_hWnd, EventMessage::kAudioPlayer);
+	m_pMfVoicePlayer->setPlaybackWindow(m_hWnd, EventMessage::kAudioPlayer);
 
-	m_pSceneCrafter = std::make_unique<CLilyanSceneCrafter>(m_pD2ImageDrawer->GetD2DeviceContext());
-	SetMenuCheckState(MenuBar::kImage, Menu::kSyncImage, m_pSceneCrafter->IsImageSynced());
+	m_pSceneCrafter = std::make_unique<CLilyanSceneCrafter>(m_pD2ImageDrawer->getD2DeviceContext());
+	setMenuCheckState(MenuBar::kImage, Menu::kSyncImage, m_pSceneCrafter->isImageSynced());
 
 	m_pFontSettingDialogue = std::make_unique<CFontSettingDialogue>();
 
 	return 0;
 }
-/*WM_DESTROY*/
-LRESULT CMainWindow::OnDestroy()
+/* WM_DESTROY */
+LRESULT CMainWindow::onDestroy()
 {
 	::PostQuitMessage(0);
 
 	return 0;
 }
-/*WM_CLOSE*/
-LRESULT CMainWindow::OnClose()
+/* WM_CLOSE */
+LRESULT CMainWindow::onClose()
 {
 	::KillTimer(m_hWnd, Timer::kText);
 
 	::DestroyWindow(m_hWnd);
-	::UnregisterClassW(m_swzClassName, m_hInstance);
+	::UnregisterClassW(m_className, m_hInstance);
 
 	return 0;
 }
-/*WM_PAINT*/
-LRESULT CMainWindow::OnPaint()
+/* WM_PAINT */
+LRESULT CMainWindow::onPaint()
 {
 	PAINTSTRUCT ps;
 	HDC hdc = ::BeginPaint(m_hWnd, &ps);
@@ -209,19 +205,19 @@ LRESULT CMainWindow::OnPaint()
 		return 0;
 	}
 
-	m_pD2ImageDrawer->Clear();
+	m_pD2ImageDrawer->clear();
 
-	ID2D1Bitmap* pImage = m_pSceneCrafter->GetCurrentImage();
-	if (pImage != nullptr)
+	ID2D1Bitmap* pD2d1Bitmap = m_pSceneCrafter->getCurrentImage();
+	if (pD2d1Bitmap != nullptr)
 	{
-		m_pD2ImageDrawer->Draw(pImage, { m_pViewManager->GetXOffset(), m_pViewManager->GetYOffset() }, m_pViewManager->GetScale());
+		m_pD2ImageDrawer->draw(pD2d1Bitmap, { m_pViewManager->getOffsetX(), m_pViewManager->getOffsetY() }, m_pViewManager->getScale());
 
 		if (!m_isTextHidden)
 		{
-			std::wstring wstr = m_pSceneCrafter->GetCurrentFormattedText();
-			m_pD2TextWriter->OutLinedDraw(wstr.c_str(), static_cast<unsigned long>(wstr.size()));
+			std::wstring message = m_pSceneCrafter->getCurrentFormattedText();
+			m_pD2TextWriter->outLinedDraw(message.c_str(), message.size());
 		}
-		m_pD2ImageDrawer->Display();
+		m_pD2ImageDrawer->display();
 	}
 
 	::EndPaint(m_hWnd, &ps);
@@ -229,20 +225,20 @@ LRESULT CMainWindow::OnPaint()
 	return 0;
 }
 /*WM_SIZE*/
-LRESULT CMainWindow::OnSize()
+LRESULT CMainWindow::onSize()
 {
 	return 0;
 }
 /*WM_KEYDOWN*/
-LRESULT CMainWindow::OnKeyDown(WPARAM wParam, LPARAM lParam)
+LRESULT CMainWindow::onKeyDown(WPARAM wParam, LPARAM lParam)
 {
 	switch (wParam)
 	{
 	case VK_RIGHT:
-		AutoTexting();
+		autoTexting();
 		break;
 	case VK_LEFT:
-		ShiftText(false);
+		shiftText(false);
 		break;
 	default:
 
@@ -252,7 +248,7 @@ LRESULT CMainWindow::OnKeyDown(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 /*WM_KEYUP*/
-LRESULT CMainWindow::OnKeyUp(WPARAM wParam, LPARAM lParam)
+LRESULT CMainWindow::onKeyUp(WPARAM wParam, LPARAM lParam)
 {
 	switch (wParam)
 	{
@@ -260,76 +256,76 @@ LRESULT CMainWindow::OnKeyUp(WPARAM wParam, LPARAM lParam)
 		::PostMessage(m_hWnd, WM_CLOSE, 0, 0);
 		break;
 	case VK_UP:
-		MenuOnForeFile();
+		menuOnForeFile();
 		break;
 	case VK_DOWN:
-		MenuOnNextFile();
+		menuOnNextFile();
 		break;
 	case 'C':
 		if (m_pD2TextWriter.get() != nullptr)
 		{
-			m_pD2TextWriter->SwitchTextColour();
-			UpdateScreen();
+			m_pD2TextWriter->toggleTextColour();
+			updateScreen();
 		}
 		break;
 	case 'T':
 		m_isTextHidden ^= true;
-		UpdateScreen();
+		updateScreen();
 		break;
 	}
 	return 0;
 }
 /*WM_COMMAND*/
-LRESULT CMainWindow::OnCommand(WPARAM wParam, LPARAM lParam)
+LRESULT CMainWindow::onCommand(WPARAM wParam, LPARAM lParam)
 {
-	int wmId = LOWORD(wParam);
-	int wmKind = LOWORD(lParam);
-	if (wmKind == 0)
+	int id = LOWORD(wParam);
+	int msgSource = LOWORD(lParam);
+	if (msgSource == 0)
 	{
-		/*Menus*/
-		switch (wmId)
+		/* Menus */
+		switch (id)
 		{
 		case Menu::kOpenFile:
-			MenuOnOpenFile();
+			menuOnOpenFile();
 			break;
 		case Menu::kVoiceSetting:
-			MenuOnVoiceSetting();
+			menuOnVoiceSetting();
 			break;
 		case Menu::kSoundSetting:
-			MenuOnSoundSetting();
+			menuOnSoundSetting();
 			break;
 		case Menu::kFontSetting:
-			MenuOnFontSetting();
+			menuOnFontSetting();
 			break;
 		case Menu::kSyncImage:
-			MenuOnSyncImage();
+			menuOnSyncImage();
 			break;
 		default:
-			if (wmId >= Menu::kLabelStartIndex)
+			if (id >= Menu::kLabelStartIndex)
 			{
-				JumpScene(static_cast<size_t>(wmId - Menu::kLabelStartIndex));
+				jumpScene(static_cast<size_t>(id - Menu::kLabelStartIndex));
 			}
 			break;
 		}
 	}
 	else
 	{
-		/*Controls*/
+		/* Controls */
 	}
 
 	return 0;
 }
 /*WM_TIMER*/
-LRESULT CMainWindow::OnTimer(WPARAM wParam)
+LRESULT CMainWindow::onTimer(WPARAM wParam)
 {
 	switch (wParam)
 	{
 	case Timer::kText:
 		if (m_pMfVoicePlayer != nullptr)
 		{
-			if (m_pMfVoicePlayer->IsEnded())
+			if (m_pMfVoicePlayer->isEnded())
 			{
-				AutoTexting();
+				autoTexting();
 			}
 		}
 		break;
@@ -339,77 +335,77 @@ LRESULT CMainWindow::OnTimer(WPARAM wParam)
 	return 0;
 }
 /* WM_MOUSEMOVE */
-LRESULT CMainWindow::OnMouseMove(WPARAM wParam, LPARAM lParam)
+LRESULT CMainWindow::onMouseMove(WPARAM wParam, LPARAM lParam)
 {
-	WORD usKey = LOWORD(wParam);
-	if (usKey == MK_LBUTTON)
+	WORD pressedKey = LOWORD(wParam);
+	if (pressedKey == MK_LBUTTON)
 	{
-		if (m_wasLeftCombinated)return 0;
+		if (m_mouseState.wasRightCombined)return 0;
 
 		POINT pt{};
 		::GetCursorPos(&pt);
-		int iX = m_lastCursorPos.x - pt.x;
-		int iY = m_lastCursorPos.y - pt.y;
+		int iX = m_mouseState.lastMousePos.x - pt.x;
+		int iY = m_mouseState.lastMousePos.y - pt.y;
 
-		if (m_hasLeftBeenDragged)
+		if (m_mouseState.hasLeftBeenDragged)
 		{
 			if (m_pViewManager != nullptr)
 			{
-				m_pViewManager->SetOffset(iX, iY);
-				UpdateScreen();
+				m_pViewManager->setOffset(iX, iY);
+				updateScreen();
 			}
 		}
 
-		m_lastCursorPos = pt;
-		m_hasLeftBeenDragged = true;
+		m_mouseState.lastMousePos = pt;
+		m_mouseState.hasLeftBeenDragged = true;
 	}
 
 	return 0;
 }
-/*WM_MOUSEWHEEL*/
-LRESULT CMainWindow::OnMouseWheel(WPARAM wParam, LPARAM lParam)
+/* WM_MOUSEWHEEL */
+LRESULT CMainWindow::onMouseWheel(WPARAM wParam, LPARAM lParam)
 {
-	int iScroll = -static_cast<short>(HIWORD(wParam)) / WHEEL_DELTA;
-	WORD wKey = LOWORD(wParam);
+	short scroll = -static_cast<short>(HIWORD(wParam)) / WHEEL_DELTA;
+	WORD pressedKey = LOWORD(wParam);
 
-	if (wKey == 0)
+	if (pressedKey == 0)
 	{
-		if (m_pSceneCrafter.get() != nullptr && m_pSceneCrafter->HasScenarioData())
+		if (m_pSceneCrafter.get() != nullptr && m_pSceneCrafter->hasScenarioData())
 		{
 			if (m_pViewManager.get() != nullptr)
 			{
-				m_pViewManager->Rescale(iScroll > 0);
+				m_pViewManager->rescale(scroll > 0);
 			}
 		}
 	}
-	else if (wKey == MK_LBUTTON)
+	else if (pressedKey == MK_LBUTTON)
 	{
 
 	}
-	else if (wKey == MK_RBUTTON)
+	else if (pressedKey == MK_RBUTTON)
 	{
-		ShiftText(iScroll > 0);
+		shiftText(scroll > 0);
 
-		m_wasRightCombinated = true;
+		m_mouseState.wasRightCombined = true;
 	}
 
 	return 0;
 }
-/*WM_LBUTTONDOWN*/
-LRESULT CMainWindow::OnLButtonDown(WPARAM wParam, LPARAM lParam)
+/* WM_LBUTTONDOWN */
+LRESULT CMainWindow::onLButtonDown(WPARAM wParam, LPARAM lParam)
 {
-	::GetCursorPos(&m_lastCursorPos);
+	::GetCursorPos(&m_mouseState.lastMousePos);
 
-	m_wasLeftPressed = true;
+	m_mouseState.wasLeftPressed = true;
 
 	return 0;
 }
-/*WM_LBUTTONUP*/
-LRESULT CMainWindow::OnLButtonUp(WPARAM wParam, LPARAM lParam)
+/* WM_LBUTTONUP */
+LRESULT CMainWindow::onLButtonUp(WPARAM wParam, LPARAM lParam)
 {
-	WORD usKey = LOWORD(wParam);
+	WORD pressedKey = LOWORD(wParam);
 
-	if (usKey == MK_RBUTTON && m_isBarHidden)
+	if (pressedKey == MK_RBUTTON && m_isBarHidden)
 	{
 		::PostMessage(m_hWnd, WM_SYSCOMMAND, SC_MOVE, 0);
 		INPUT input{};
@@ -417,48 +413,51 @@ LRESULT CMainWindow::OnLButtonUp(WPARAM wParam, LPARAM lParam)
 		input.ki.wVk = VK_DOWN;
 		::SendInput(1, &input, sizeof(input));
 
-		m_wasRightCombinated = true;
+		m_mouseState.wasRightCombined = true;
 	}
 
-	if (usKey == 0 && m_wasLeftPressed)
+	if (pressedKey == 0)
 	{
-		POINT pt{};
-		::GetCursorPos(&pt);
-		int iX = m_lastCursorPos.x - pt.x;
-		int iY = m_lastCursorPos.y - pt.y;
-
-		if (iX == 0 && iY == 0)
+		if (m_mouseState.wasLeftPressed)
 		{
-			if (m_pSceneCrafter.get() != nullptr)
+			POINT pt{};
+			::GetCursorPos(&pt);
+			int iX = m_mouseState.lastMousePos.x - pt.x;
+			int iY = m_mouseState.lastMousePos.y - pt.y;
+
+			if (iX == 0 && iY == 0)
 			{
-				if (!m_pSceneCrafter->IsImageSynced())
+				if (m_pSceneCrafter.get() != nullptr)
 				{
-					m_pSceneCrafter->ShiftImage();
-					UpdateScreen();
+					if (!m_pSceneCrafter->isImageSynced())
+					{
+						m_pSceneCrafter->shiftForwardImage();
+						updateScreen();
+					}
 				}
 			}
 		}
 	}
 
-	m_wasLeftPressed = false;
+	m_mouseState.wasLeftPressed = false;
 
 	return 0;
 }
-/*WM_RBUTTONUP*/
-LRESULT CMainWindow::OnRButtonUp(WPARAM wParam, LPARAM lParam)
+/* WM_RBUTTONUP */
+LRESULT CMainWindow::onRButtonUp(WPARAM wParam, LPARAM lParam)
 {
-	if (m_wasRightCombinated)
+	if (m_mouseState.wasRightCombined)
 	{
-		m_wasRightCombinated = false;
+		m_mouseState.wasRightCombined = false;
 		return 0;
 	}
 
-	WORD usKey = LOWORD(wParam);
-	if (usKey == 0)
+	WORD pressedKey = LOWORD(wParam);
+	if (pressedKey == 0)
 	{
-		if (m_pSceneCrafter.get() != nullptr && m_pSceneCrafter->HasScenarioData())
+		if (m_pSceneCrafter.get() != nullptr && m_pSceneCrafter->hasScenarioData())
 		{
-			const auto& labelData = m_pSceneCrafter->GetLabelData();
+			const auto& labelData = m_pSceneCrafter->getLabelData();
 			if (labelData.empty())return 0;
 
 			HMENU hPopupMenu = ::CreatePopupMenu();
@@ -466,7 +465,7 @@ LRESULT CMainWindow::OnRButtonUp(WPARAM wParam, LPARAM lParam)
 			{
 				for (size_t i = 0; i < labelData.size(); ++i)
 				{
-					::AppendMenuW(hPopupMenu, MF_STRING, Menu::kLabelStartIndex + i, labelData[i].wstrCaption.c_str());
+					::AppendMenuW(hPopupMenu, MF_STRING, Menu::kLabelStartIndex + i, labelData[i].caption.c_str());
 				}
 
 				POINT point{};
@@ -479,185 +478,170 @@ LRESULT CMainWindow::OnRButtonUp(WPARAM wParam, LPARAM lParam)
 
 	return 0;
 }
-/*WM_MBUTTONUP*/
-LRESULT CMainWindow::OnMButtonUp(WPARAM wParam, LPARAM lParam)
+/* WM_MBUTTONUP */
+LRESULT CMainWindow::onMButtonUp(WPARAM wParam, LPARAM lParam)
 {
-	WORD usKey = LOWORD(wParam);
-
-	if (usKey == 0)
+	WORD pressedKey = LOWORD(wParam);
+	if (pressedKey == 0)
 	{
-		if (m_pSceneCrafter.get() != nullptr && m_pSceneCrafter->HasScenarioData())
+		if (m_pSceneCrafter.get() != nullptr && m_pSceneCrafter->hasScenarioData())
 		{
 			if (m_pViewManager.get() != nullptr)
 			{
-				m_pViewManager->ResetZoom();
+				m_pViewManager->resetZoom();
 			}
 		}
 	}
-
-	if (usKey == MK_RBUTTON)
+	else if (pressedKey == MK_RBUTTON)
 	{
-		ToggleWindowBorderStyle();
+		toggleWindowBorderStyle();
 
-		m_wasRightCombinated = true;
+		m_mouseState.wasRightCombined = true;
 	}
 
 	return 0;
 }
-/*操作欄作成*/
-void CMainWindow::InitialiseMenuBar()
+/* 操作欄作成 */
+void CMainWindow::initialiseMenuBar()
 {
-	HMENU hMenuFile = nullptr;
-	HMENU hMenuSetting = nullptr;
-	HMENU hMenuImage = nullptr;
-
-	HMENU hMenuBar = nullptr;
-	BOOL iRet = FALSE;
-
 	if (m_hMenuBar != nullptr)return;
 
-	hMenuFile = ::CreateMenu();
-	if (hMenuFile == nullptr)goto failed;
-	iRet = ::AppendMenuA(hMenuFile, MF_STRING, Menu::kOpenFile, "Open");
-	if (iRet == 0)goto failed;
+	HMENU hMenu = window_menu::MenuBuilder(
+		{
+			{0, L"File", window_menu::MenuBuilder(
+				{
+					{ Menu::kOpenFile, L"Open"},
+				}).get()
+			},
+			{0, L"Setting", window_menu::MenuBuilder(
+				{
+					{ Menu::kVoiceSetting, L"Voice"},
+					{ Menu::kSoundSetting, L"Sound"},
+					{ Menu::kFontSetting, L"Font"}
+				}).get()
+			},
+			{0, L"Image", window_menu::MenuBuilder(
+				{
+					{ Menu::kSyncImage, L"Sync"},
+				}).get()
+			}
+		}
+	).get();
 
-	hMenuSetting = ::CreateMenu();
-	if (hMenuSetting == nullptr)goto failed;
-	iRet = ::AppendMenuA(hMenuSetting, MF_STRING, Menu::kVoiceSetting, "Voice");
-	if (iRet == 0)goto failed;
-	iRet = ::AppendMenuA(hMenuSetting, MF_STRING, Menu::kSoundSetting, "Sound");
-	if (iRet == 0)goto failed;
-	iRet = ::AppendMenuA(hMenuSetting, MF_STRING, Menu::kFontSetting, "Font");
-	if (iRet == 0)goto failed;
-
-	hMenuImage = ::CreateMenu();
-	if (hMenuFile == nullptr)goto failed;
-	iRet = ::AppendMenuA(hMenuImage, MF_STRING, Menu::kSyncImage, "Sync");
-	if (iRet == 0)goto failed;
-
-	hMenuBar = ::CreateMenu();
-	if (hMenuBar == nullptr) goto failed;
-	iRet = ::AppendMenuA(hMenuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(hMenuFile), "File");
-	if (iRet == 0)goto failed;
-	iRet = ::AppendMenuA(hMenuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(hMenuSetting), "Setting");
-	if (iRet == 0)goto failed;
-	iRet = ::AppendMenuA(hMenuBar, MF_POPUP, reinterpret_cast<UINT_PTR>(hMenuImage), "Image");
-	if (iRet == 0)goto failed;
-
-	iRet = ::SetMenu(m_hWnd, hMenuBar);
-	if (iRet == 0)goto failed;
-
-	m_hMenuBar = hMenuBar;
-
-	return;
-
-failed:
-	std::wstring wstrMessage = L"Failed to create menu; code: " + std::to_wstring(::GetLastError());
-	::MessageBoxW(nullptr, wstrMessage.c_str(), L"Error", MB_ICONERROR);
-	if (hMenuFile != nullptr)
+	if (::IsMenu(hMenu))
 	{
-		::DestroyMenu(hMenuFile);
-	}
-	if (hMenuSetting != nullptr)
-	{
-		::DestroyMenu(hMenuSetting);
-	}
-	if (hMenuImage != nullptr)
-	{
-		::DestroyMenu(hMenuImage);
-	}
-	if (hMenuBar != nullptr)
-	{
-		::DestroyMenu(hMenuBar);
+		if (::SetMenu(m_hWnd, hMenu))
+		{
+			m_hMenuBar = hMenu;
+		}
+		else
+		{
+			showErrorMessageBox(L"Failed to create menu; code: %ul", ::GetLastError());
+			::DestroyMenu(hMenu);
+		}
 	}
 }
-/*ファイル選択*/
-void CMainWindow::MenuOnOpenFile()
+
+void CMainWindow::showErrorMessageBox(const wchar_t* format, ...) const
 {
-	const wchar_t swzFilter[] = L"chara*_20*.nani";
-	std::wstring wstrSelectedFilePath = win_dialogue::SelectOpenFile(L"Script file", swzFilter, nullptr, m_hWnd);
-	if (!wstrSelectedFilePath.empty())
+	wchar_t messageBuffer[512]{};
+	constexpr size_t bufferSize = sizeof(messageBuffer) / sizeof(wchar_t) - 1;
+
+	va_list args;
+	va_start(args, format);
+	vswprintf_s(messageBuffer, bufferSize, format, args);
+	va_end(args);
+
+	/* m_hWnd might be null. */
+	::MessageBoxW(m_hWnd, messageBuffer, L"Error", MB_ICONERROR);
+}
+/* ファイル選択 */
+void CMainWindow::menuOnOpenFile()
+{
+	constexpr wchar_t fileFilter[] = L"chara*_20*.nani";
+	std::wstring selectedFilePath = win_dialogue::SelectOpenFile(L"Script file", fileFilter, nullptr, m_hWnd);
+	if (!selectedFilePath.empty())
 	{
-		bool bRet = SetupScenario(wstrSelectedFilePath.c_str());
+		bool bRet = setupScenario(selectedFilePath);
 		if (bRet)
 		{
 			m_scriptFilePaths.clear();
 			m_nScriptFileIndex = 0;
-			win_filesystem::GetFilePathListAndIndex(wstrSelectedFilePath.c_str(), swzFilter, m_scriptFilePaths, &m_nScriptFileIndex);
+			win_filesystem::GetFilePathListAndIndex(selectedFilePath, fileFilter, m_scriptFilePaths, m_nScriptFileIndex);
 		}
 	}
 }
-/*次のファイルに移動*/
-void CMainWindow::MenuOnNextFile()
+/* 次のファイルに移動 */
+void CMainWindow::menuOnNextFile()
 {
 	if (m_scriptFilePaths.empty())return;
 
 	++m_nScriptFileIndex;
 	if (m_nScriptFileIndex >= m_scriptFilePaths.size())m_nScriptFileIndex = 0;
 
-	SetupScenario(m_scriptFilePaths[m_nScriptFileIndex].c_str());
+	setupScenario(m_scriptFilePaths[m_nScriptFileIndex]);
 }
 /*前のファイルに移動*/
-void CMainWindow::MenuOnForeFile()
+void CMainWindow::menuOnForeFile()
 {
 	if (m_scriptFilePaths.empty())return;
 
 	--m_nScriptFileIndex;
 	if (m_nScriptFileIndex >= m_scriptFilePaths.size())m_nScriptFileIndex = m_scriptFilePaths.size() - 1;
 
-	SetupScenario(m_scriptFilePaths[m_nScriptFileIndex].c_str());
+	setupScenario(m_scriptFilePaths[m_nScriptFileIndex]);
 }
-/*音声音量・再生速度変更*/
-void CMainWindow::MenuOnVoiceSetting()
+/* 音声音量・再生速度変更 */
+void CMainWindow::menuOnVoiceSetting()
 {
 	if (m_pMfVoicePlayer.get() != nullptr)
 	{
-		CMediaSettingDialogue sMediaSettingDialogue;
-		sMediaSettingDialogue.Open(m_hInstance, m_hWnd, m_pMfVoicePlayer.get(), L"Voice");
+		CMediaSettingDialogue mediaSettingDialogue;
+		mediaSettingDialogue.open(m_hInstance, m_hWnd, m_pMfVoicePlayer.get(), L"Voice");
 	}
 }
-/*効果音音量・再生速度変更*/
-void CMainWindow::MenuOnSoundSetting()
+/* 効果音音量・再生速度変更 */
+void CMainWindow::menuOnSoundSetting()
 {
 	if (m_pMfSoundPlayer.get() != nullptr)
 	{
-		CMediaSettingDialogue sMediaSettingDialogue;
-		sMediaSettingDialogue.Open(m_hInstance, m_hWnd, m_pMfSoundPlayer.get(), L"Sound");
+		CMediaSettingDialogue mediaSettingDialogue;
+		mediaSettingDialogue.open(m_hInstance, m_hWnd, m_pMfSoundPlayer.get(), L"Sound");
 	}
 }
 
-void CMainWindow::MenuOnFontSetting()
+void CMainWindow::menuOnFontSetting()
 {
 	if (m_pFontSettingDialogue != nullptr)
 	{
-		if (m_pFontSettingDialogue->GetHwnd() == nullptr)
+		if (m_pFontSettingDialogue->getHwnd() == nullptr)
 		{
-			HWND hWnd = m_pFontSettingDialogue->Open(m_hInstance, m_hWnd, L"Font", m_pD2TextWriter.get());
+			HWND hWnd = m_pFontSettingDialogue->open(m_hInstance, m_hWnd, L"Font", m_pD2TextWriter.get());
 			::ShowWindow(hWnd, SW_SHOWNORMAL);
 		}
 		else
 		{
-			::SetFocus(m_pFontSettingDialogue->GetHwnd());
+			::SetFocus(m_pFontSettingDialogue->getHwnd());
 		}
 	}
 }
 
-void CMainWindow::MenuOnSyncImage()
+void CMainWindow::menuOnSyncImage()
 {
 	if (m_pSceneCrafter.get() != nullptr)
 	{
-		bool bRet = SetMenuCheckState(MenuBar::kImage, Menu::kSyncImage, !m_pSceneCrafter->IsImageSynced());
+		bool bRet = setMenuCheckState(MenuBar::kImage, Menu::kSyncImage, !m_pSceneCrafter->isImageSynced());
 		if (bRet)
 		{
-			m_pSceneCrafter->ToggleImageSync();
-			UpdateScreen();
+			m_pSceneCrafter->syncImage(!m_pSceneCrafter->isImageSynced());
+			updateScreen();
 		}
 	}
 }
-/*表示形式切り替え*/
-void CMainWindow::ToggleWindowBorderStyle()
+/* 表示形式切り替え */
+void CMainWindow::toggleWindowBorderStyle()
 {
-	if (m_pSceneCrafter.get() == nullptr || !m_pSceneCrafter->HasScenarioData())return;
+	if (m_pSceneCrafter.get() == nullptr || !m_pSceneCrafter->hasScenarioData())return;
 
 	RECT rect;
 	::GetWindowRect(m_hWnd, &rect);
@@ -679,11 +663,11 @@ void CMainWindow::ToggleWindowBorderStyle()
 
 	if (m_pViewManager.get() != nullptr)
 	{
-		m_pViewManager->OnStyleChanged();
+		m_pViewManager->onStyleChanged();
 	}
 }
 /* 印状態変更 */
-bool CMainWindow::SetMenuCheckState(unsigned int uiMenuIndex, unsigned int uiItemIndex, bool checked) const
+bool CMainWindow::setMenuCheckState(unsigned int uiMenuIndex, unsigned int uiItemIndex, bool checked) const
 {
 	HMENU hMenuBar = ::GetMenu(m_hWnd);
 	if (hMenuBar != nullptr)
@@ -698,98 +682,95 @@ bool CMainWindow::SetMenuCheckState(unsigned int uiMenuIndex, unsigned int uiIte
 
 	return false;
 }
-/*寸劇構築*/
-bool CMainWindow::SetupScenario(const wchar_t* pwzFilePath)
+/* 寸劇構築 */
+bool CMainWindow::setupScenario(const std::wstring& filePath)
 {
 	bool bRet = false;
 
 	if (m_pSceneCrafter.get() != nullptr)
 	{
-		bRet = m_pSceneCrafter->LoadScenario(pwzFilePath);
+		bRet = m_pSceneCrafter->loadScenario(filePath);
 		if (bRet)
 		{
-			unsigned int uiWidth = 0;
-			unsigned int uiHeight = 0;
-			m_pSceneCrafter->GetCurrentImageSize(&uiWidth, &uiHeight);
+			unsigned int width = 0, height = 0;
+			m_pSceneCrafter->getCurrentImageSize(&width, &height);
 
 			if (m_pViewManager != nullptr)
 			{
-				m_pViewManager->SetBaseSize(uiWidth, uiHeight);
-				m_pViewManager->ResetZoom();
+				m_pViewManager->setBaseSize(width, height);
+				m_pViewManager->resetZoom();
 			}
 
-			std::wstring wsrWindowTitle = m_pSceneCrafter->GetSceneTitle();
-			wsrWindowTitle += L"; " + text_utility::ExtractFileName(pwzFilePath);
-			::SetWindowText(m_hWnd, wsrWindowTitle.c_str());
+			std::wstring windowTitle = m_pSceneCrafter->getSceneTitle();
+			windowTitle.append(L"; ").append(path_utility::ExtractFileNameWithoutExtension(filePath));
+			::SetWindowText(m_hWnd, windowTitle.data());
 
 			m_pMfSoundPlayer = std::make_unique<CMfMediaPlayer>();
 
-			UpdateText();
+			updateText();
 		}
 		else
 		{
-			std::wstring wstrMessage = L"Failed to set up ";
-			wstrMessage += pwzFilePath;
-			::MessageBox(m_hWnd, wstrMessage.c_str(), L"Error", MB_ICONERROR);
+			showErrorMessageBox(L"Failed to set up %.*s", static_cast<int>(filePath.size()), filePath.data());
 		}
 	}
 
 	return bRet;
 }
 
-void CMainWindow::JumpScene(size_t nIndex)
+void CMainWindow::jumpScene(size_t nIndex)
 {
-	if (m_pSceneCrafter.get() != nullptr && m_pSceneCrafter->HasScenarioData())
+	if (m_pSceneCrafter.get() != nullptr && m_pSceneCrafter->hasScenarioData())
 	{
-		m_pSceneCrafter->JumpToLabel(nIndex);
-		UpdateText();
+		m_pSceneCrafter->jumpToLabel(nIndex);
+		updateText();
 	}
 }
 /*再描画要求*/
-void CMainWindow::UpdateScreen()
+void CMainWindow::updateScreen()
 {
 	::InvalidateRect(m_hWnd, nullptr, FALSE);
 }
 /*文章送り・戻し*/
-void CMainWindow::ShiftText(bool bForward)
+void CMainWindow::shiftText(bool forward)
 {
 	if (m_pSceneCrafter.get() != nullptr)
 	{
-		m_pSceneCrafter->ShiftScene(bForward);
-		UpdateText();
+		m_pSceneCrafter->shiftScene(forward);
+		updateText();
 	}
 }
 /*文章更新*/
-void CMainWindow::UpdateText()
+void CMainWindow::updateText()
 {
 	if (m_pSceneCrafter.get() != nullptr)
 	{
 		if (m_pMfSoundPlayer.get() != nullptr)
 		{
-			const wchar_t* pwzSoundFilePath = m_pSceneCrafter->GetCurrentSoundFilePath();
-			if (pwzSoundFilePath != nullptr && *pwzSoundFilePath != L'\0')
+			const wchar_t* pSoundFilePath = m_pSceneCrafter->getCurrentSoundFilePath();
+			if (pSoundFilePath != nullptr && *pSoundFilePath != L'\0')
 			{
-				m_pMfSoundPlayer->Play(pwzSoundFilePath);
+				m_pMfSoundPlayer->play(pSoundFilePath);
 			}
 		}
 
 		if (m_pMfVoicePlayer.get() != nullptr)
 		{
-			const wchar_t *pwzVoiceFilePath = m_pSceneCrafter->GetCurrentVoiceFilePath();
-			if (pwzVoiceFilePath != nullptr && *pwzVoiceFilePath != L'\0')
+			const wchar_t* pVoiceFilePath = m_pSceneCrafter->getCurrentVoiceFilePath();
+			if (pVoiceFilePath != nullptr && *pVoiceFilePath != L'\0')
 			{
-				m_pMfVoicePlayer->Play(pwzVoiceFilePath);
+				m_pMfVoicePlayer->play(pVoiceFilePath);
 			}
 		}
 
 		constexpr unsigned int kTimerInterval = 2000;
 		::SetTimer(m_hWnd, Timer::kText, kTimerInterval, nullptr);
 
-		UpdateScreen();
+		updateScreen();
 	}
 }
-/*IMFMediaEngineNotify::EventNotify*/
-void CMainWindow::OnAudioPlayerEvent(unsigned long ulEvent)
+/* IMFMediaEngineNotify::EventNotify */
+void CMainWindow::onAudioPlayerEvent(unsigned long ulEvent)
 {
 	switch (ulEvent)
 	{
@@ -797,20 +778,20 @@ void CMainWindow::OnAudioPlayerEvent(unsigned long ulEvent)
 
 		break;
 	case MF_MEDIA_ENGINE_EVENT_ENDED:
-		AutoTexting();
+		autoTexting();
 		break;
 	default:
 		break;
 	}
 }
-/*自動送り*/
-void CMainWindow::AutoTexting()
+/* 自動送り */
+void CMainWindow::autoTexting()
 {
 	if (m_pSceneCrafter.get() != nullptr)
 	{
-		if (!m_pSceneCrafter->HasReachedLastScene())
+		if (!m_pSceneCrafter->hasReachedLastScene())
 		{
-			ShiftText(true);
+			shiftText(true);
 		}
 	}
 }

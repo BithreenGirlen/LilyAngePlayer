@@ -6,31 +6,30 @@
 #include "win_dialogue.h"
 #include "win_text.h"
 #include "text_utility.h"
+#include "path_utility.h"
 
 #include "deps/nlohmann/json.hpp"
 
-/*内部用*/
+/* 内部用 */
 namespace lilyan
 {
 	struct SResourcePath
 	{
-		std::wstring wstrStillFolderPath;
-		std::wstring wstrVoiceFolderPath;
-		std::wstring wstrSoundFolderPath;
+		std::wstring stillFolderPath;
+		std::wstring voiceFolderPath;
+		std::wstring soundFolderPath;
 	};
 
-	/*各素材経路導出*/
-	static bool DeriveResourcePathFromScriptFilePath(const std::wstring& wstrScriptFilePath, SResourcePath& resourcePath)
+	/* 各素材経路導出 */
+	static bool DeriveResourcePathFromScriptFilePath(const std::wstring& scriptFilePath, SResourcePath& resourcePath)
 	{
-		const wchar_t g_swzScriptFolderName[] = L"Scripts";
-		size_t nPos = wstrScriptFilePath.find(g_swzScriptFolderName);
+		static constexpr std::wstring_view scriptFolderName = L"Scripts";
+		size_t nPos = scriptFilePath.find(scriptFolderName);
 		if (nPos == std::wstring::npos)return false;
 
-		std::wstring wstrBaseFolder = wstrScriptFilePath.substr(0, nPos);
-
-		resourcePath.wstrStillFolderPath = wstrBaseFolder + L"Backgrounds\\MainBackground\\";
-		resourcePath.wstrVoiceFolderPath = wstrBaseFolder + L"Voice\\";
-		resourcePath.wstrSoundFolderPath = wstrBaseFolder + L"Audio\\Sfx\\";
+		resourcePath.stillFolderPath.assign(&scriptFilePath[0], nPos).append(L"Backgrounds\\MainBackground\\");
+		resourcePath.voiceFolderPath.assign(&scriptFilePath[0], nPos).append(L"Voice\\");
+		resourcePath.soundFolderPath.assign(&scriptFilePath[0], nPos).append(L"Audio\\Sfx\\");
 
 		return true;
 	}
@@ -52,12 +51,12 @@ namespace lilyan
 		std::string strData;
 	};
 
-	/*台本解析*/
-	static void ParseScenario(const std::string& strFile, std::vector<STokenDatum> &tokenData, std::string &strError)
+	/* 台本解析 */
+	static bool ParseScenario(const std::string& file, std::vector<STokenDatum> &tokenData)
 	{
 		try
 		{
-			const nlohmann::json nlJson = nlohmann::json::parse(strFile);
+			const nlohmann::json nlJson = nlohmann::json::parse(file);
 
 			const auto& refIds = nlJson.at("references").at("RefIds");
 			for (const auto& refId : refIds)
@@ -115,66 +114,72 @@ namespace lilyan
 				}
 			}
 		}
-		catch (nlohmann::json::exception e)
+		catch (const nlohmann::json::exception& e)
 		{
-			strError = e.what();
-		}
-	}
-
-	/*背景画像一覧作成*/
-	static void CreateBgFilePaths(const std::wstring &wstrBaseBgFolderPath, const std::wstring& wstrBgFileName, std::vector<std::wstring>& BgFilePaths)
-	{
-		std::wstring wstrEventFolderPath = wstrBaseBgFolderPath + text_utility::ExtractDirectory(wstrBgFileName);
-
-		win_filesystem::CreateFilePathList(wstrEventFolderPath.c_str(), L".png", BgFilePaths);
-	}
-
-	/*背景画像番号検索*/
-	static long long FindBgIndex(const std::vector<std::wstring>& BgFilePaths, const std::wstring& wstrBgFileName)
-	{
-		const auto& iter = std::find_if
-		(
-			BgFilePaths.begin(), BgFilePaths.end(),
-			[&wstrBgFileName](const std::wstring& wstrFilePath)
-			{
-				return wstrFilePath.find(wstrBgFileName) != std::wstring::npos;
-			}
-		);
-
-		if (iter != BgFilePaths.cend())
-		{
-			return std::distance(BgFilePaths.begin(), iter);
+			win_dialogue::ShowMessageBox("Parse error", e.what());
+			return false;
 		}
 
-		return -1;
+		return true;
+	}
+
+	/* 背景画像一覧作成 */
+	static void CreateBgFilePaths(const std::wstring &bgBaseFolderPath, const std::wstring& bgFileName, std::vector<std::wstring>& BgFilePaths)
+	{
+		std::wstring eventFolderPath = bgBaseFolderPath + std::wstring(path_utility::ExtractParentPath(bgFileName));
+
+		win_filesystem::CreateFilePathList(eventFolderPath, L".png", BgFilePaths);
+	}
+
+	/// @brief 文字列の8バイト整数への変換
+	template<typename CharType>
+	static uint64_t StrToUInt64(const std::basic_string_view<CharType>& s)
+	{
+		if constexpr (std::is_same_v<CharType, wchar_t>)
+		{
+			/* The length of uint64_t is 20 characters at most. */
+			wchar_t uint64Buffer[32]{};
+			constexpr size_t bufferLength = sizeof(uint64Buffer) / sizeof(wchar_t) - 1;
+			if (s.length() > bufferLength)return static_cast<uint64_t>(-1LL);
+
+			::memcpy(uint64Buffer, s.data(), s.length() * sizeof(wchar_t));
+			uint64Buffer[s.length()] = L'\0';
+
+			return ::wcstoull(uint64Buffer, nullptr, 10);
+		}
+		else if constexpr (std::is_same_v<CharType, char>)
+		{
+			char uint64Buffer[32]{};
+			constexpr size_t bufferLength = sizeof(uint64Buffer) - 1;
+			if (s.length() > bufferLength)return static_cast<uint64_t>(-1LL);
+
+			::memcpy(uint64Buffer, s.data(), s.length());
+			uint64Buffer[s.length()] = '\0';
+
+			return ::strtoull(uint64Buffer, nullptr, 10);
+		}
 	}
 
 } /* namespace lilyan */
 
-/*台本読み込み*/
-bool lilyan::LoadScenario(const std::wstring& wstrScriptFilePath, std::vector<adv::TextDatum>& textData, std::vector<std::wstring>& imageFilePaths, std::vector<adv::SceneDatum>& sceneData, std::wstring& wstrTitle, std::vector<adv::SoundDatum>& soundData, std::vector <adv::LabelDatum>& labelData)
+/* 台本読み込み */
+bool lilyan::LoadScenario(const std::wstring& scriptFilePath, std::vector<adv::TextDatum>& textData, std::vector<std::wstring>& imageFilePaths, std::vector<adv::SceneDatum>& sceneData, std::wstring& sceneTitle, std::vector<adv::SoundDatum>& soundData, std::vector <adv::LabelDatum>& labelData)
 {
-	std::string strFile = win_filesystem::LoadFileAsString(wstrScriptFilePath.c_str());
-	if (strFile.empty())return false;
+	std::string scriptFile = win_filesystem::LoadFileAsString(scriptFilePath.c_str());
+	if (scriptFile.empty())return false;
 
 	SResourcePath resourcePath;
-	bool bRet = DeriveResourcePathFromScriptFilePath(wstrScriptFilePath, resourcePath);
+	bool bRet = DeriveResourcePathFromScriptFilePath(scriptFilePath, resourcePath);
 	if (!bRet)return false;
 
 	std::vector<STokenDatum> tokenData;
-	std::string strError;
-	ParseScenario(strFile, tokenData, strError);
+	bRet = ParseScenario(scriptFile, tokenData);
+	if (!bRet)return false;
 
-	if (!strError.empty())
-	{
-		win_dialogue::ShowMessageBox("Parse error", strError.c_str());
-		return false;
-	}
+	std::vector<std::wstring> bgFilePaths;
 
-	std::vector<std::wstring> wstrBgFilePaths;
-
-	std::wstring wstrVoiceFileNameBuffer;
-	std::wstring wstrSoundFileNameBuffer;
+	std::wstring voiceFileNameBuffer;
+	std::wstring soundFileNameBuffer;
 	adv::SceneDatum sceneDatumBuffer;
 	std::wstring labelBuffer;
 
@@ -183,44 +188,47 @@ bool lilyan::LoadScenario(const std::wstring& wstrScriptFilePath, std::vector<ad
 		const auto& tokenType = tokenDatum.tokenType;
 		if (tokenType == ETokenType::Comment)
 		{
-			if (wstrTitle.empty())
+			if (sceneTitle.empty())
 			{
-				wstrTitle = win_text::WidenUtf8(tokenDatum.strData);
+				sceneTitle = win_text::WidenUtf8(tokenDatum.strData);
 			}
 		}
 		else if (tokenType == ETokenType::Voice)
 		{
-			wstrVoiceFileNameBuffer = resourcePath.wstrVoiceFolderPath + win_text::WidenUtf8(tokenDatum.strData) + L".m4a";
+			voiceFileNameBuffer.assign(resourcePath.voiceFolderPath).append(win_text::WidenUtf8(tokenDatum.strData)).append(L".m4a");
 		}
 		else if (tokenType == ETokenType::Text)
 		{
 			adv::TextDatum textDatum;
-			textDatum.wstrText = win_text::WidenUtf8(tokenDatum.strData);
-			text_utility::ReplaceAll(textDatum.wstrText, L"{G_PlayerName}", L"主人公");
+			textDatum.message = win_text::WidenUtf8(tokenDatum.strData);
+			text_utility::ReplaceAll(textDatum.message, L"{G_PlayerName}", L"主人公");
 
-			/*効果音と音声が重なる場合、文章データを複製して間を持たせる。*/
-			if (!wstrSoundFileNameBuffer.empty())
+			/* 効果音と音声が重なる場合、文章データを複製して間を持たせる。 */
+			if (!soundFileNameBuffer.empty())
 			{
-				if (!wstrVoiceFileNameBuffer.empty())
+				if (!voiceFileNameBuffer.empty())
 				{
-					textData.emplace_back(adv::TextDatum{ textDatum.wstrText , L"" });
+					textData.emplace_back(adv::TextDatum{ textDatum.message , L"" });
 
 					sceneDatumBuffer.nTextIndex = textData.size() - 1;
 					sceneData.push_back(sceneDatumBuffer);
 				}
 
-				adv::SoundDatum soundDatum;
-				soundDatum.wstrSoundFilePath = wstrSoundFileNameBuffer;
-				soundDatum.nSceneIndex = sceneData.size() - 1;
+				adv::SoundDatum soundDatum
+				{
+					.nSceneIndex = sceneData.size() - 1,
+					.soundFilePath = soundFileNameBuffer
+				};
+
 				soundData.push_back(std::move(soundDatum));
 
-				wstrSoundFileNameBuffer.clear();
+				soundFileNameBuffer.clear();
 			}
 
-			if (!wstrVoiceFileNameBuffer.empty())
+			if (!voiceFileNameBuffer.empty())
 			{
-				textDatum.wstrVoicePath = wstrVoiceFileNameBuffer;
-				wstrVoiceFileNameBuffer.clear();
+				textDatum.voiceFilePath = voiceFileNameBuffer;
+				voiceFileNameBuffer.clear();
 			}
 
 			textData.push_back(std::move(textDatum));
@@ -238,37 +246,38 @@ bool lilyan::LoadScenario(const std::wstring& wstrScriptFilePath, std::vector<ad
 		{
 			if (tokenDatum.strData.find("Event") == std::string::npos)continue;
 
-			std::wstring wstrBgName = win_text::WidenUtf8(tokenDatum.strData);
+			std::wstring bgRelativeFilePath = win_text::WidenUtf8(tokenDatum.strData);
 
-			if (wstrBgFilePaths.empty())
+			if (bgFilePaths.empty())
 			{
-				CreateBgFilePaths(resourcePath.wstrStillFolderPath, wstrBgName, wstrBgFilePaths);
-				if (wstrBgFilePaths.empty())return false;
+				CreateBgFilePaths(resourcePath.stillFolderPath, bgRelativeFilePath, bgFilePaths);
+				if (bgFilePaths.empty())return false;
 			}
 
-			std::wstring wstrFileIndex = text_utility::ExtractFileName(wstrBgName);
-			unsigned long ulIndex = wcstoul(wstrFileIndex.c_str(), nullptr, 10) - 1L;
-			if (ulIndex >= wstrBgFilePaths.size())
+			uint64_t fileIndex = StrToUInt64(path_utility::ExtractFileNameWithoutExtension(bgRelativeFilePath));
+			if (fileIndex == static_cast<uint64_t>(-1LL) || fileIndex == 0)return false;
+			--fileIndex;
+			if (fileIndex >= bgFilePaths.size())
 			{
-				/*何故か14からの指定なので減算する。*/
-				if (wstrScriptFilePath.rfind(L"chara1022_203.nani") != std::wstring::npos)
+				/* 何故か14からの指定なので減算する。 */
+				if (scriptFilePath.ends_with(L"chara1022_203.nani"))
 				{
-					ulIndex -= 3L;
+					fileIndex -= 3LL;
 				}
 
-				if (ulIndex >= wstrBgFilePaths.size())return false;
+				if (fileIndex >= bgFilePaths.size())return false;
 			}
 
-			imageFilePaths.push_back(wstrBgFilePaths[ulIndex]);
+			imageFilePaths.push_back(bgFilePaths[fileIndex]);
 			sceneDatumBuffer.nImageIndex = imageFilePaths.size() - 1;
 
-			labelBuffer = text_utility::ExtractFileName(wstrBgFilePaths[ulIndex]);
+			labelBuffer = path_utility::ExtractFileNameWithoutExtension(bgFilePaths[fileIndex]);
 		}
 		else if(tokenType == ETokenType::Sound)
 		{
-			/*名称指定に拡張子有無の表記揺れ有り。*/
-			std::wstring wstrFileName = text_utility::ExtractFileName(win_text::WidenUtf8(tokenDatum.strData));
-			wstrSoundFileNameBuffer = resourcePath.wstrSoundFolderPath + wstrFileName + L".m4a";
+			/* 名称指定に拡張子有無の表記揺れ有り。 */
+			std::wstring_view fileName = path_utility::ExtractFileNameWithoutExtension(win_text::WidenUtf8(tokenDatum.strData));
+			soundFileNameBuffer.assign(resourcePath.soundFolderPath).append(fileName).append(L".m4a");
 		}
 	}
 

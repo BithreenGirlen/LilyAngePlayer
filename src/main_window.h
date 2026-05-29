@@ -20,32 +20,33 @@ public:
 	CMainWindow();
 	~CMainWindow();
 
-	bool Create(HINSTANCE hInstance, const wchar_t* pwzWindowName);
-	int MessageLoop();
+	bool create(HINSTANCE hInstance, const wchar_t* pwzWindowName);
+	int messageLoop();
 
-	HWND GetHwnd()const { return m_hWnd;}
+	HWND getHwnd()const { return m_hWnd;}
 private:
-	const wchar_t* m_swzClassName = L"Mijn player window";
+	const wchar_t* m_className = L"Mijn player window";
+
 	HINSTANCE m_hInstance = nullptr;
 	HWND m_hWnd = nullptr;
 
 	static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	LRESULT HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	LRESULT OnCreate(HWND hWnd);
-	LRESULT OnDestroy();
-	LRESULT OnClose();
-	LRESULT OnPaint();
-	LRESULT OnSize();
-	LRESULT OnKeyDown(WPARAM wParam, LPARAM lParam);
-	LRESULT OnKeyUp(WPARAM wParam, LPARAM lParam);
-	LRESULT OnCommand(WPARAM wParam, LPARAM lParam);
-	LRESULT OnTimer(WPARAM wParam);
-	LRESULT OnMouseMove(WPARAM wParam, LPARAM lParam);
-	LRESULT OnMouseWheel(WPARAM wParam, LPARAM lParam);
-	LRESULT OnLButtonDown(WPARAM wParam, LPARAM lParam);
-	LRESULT OnLButtonUp(WPARAM wParam, LPARAM lParam);
-	LRESULT OnRButtonUp(WPARAM wParam, LPARAM lParam);
-	LRESULT OnMButtonUp(WPARAM wParam, LPARAM lParam);
+	LRESULT handleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	LRESULT onCreate(HWND hWnd);
+	LRESULT onDestroy();
+	LRESULT onClose();
+	LRESULT onPaint();
+	LRESULT onSize();
+	LRESULT onKeyDown(WPARAM wParam, LPARAM lParam);
+	LRESULT onKeyUp(WPARAM wParam, LPARAM lParam);
+	LRESULT onCommand(WPARAM wParam, LPARAM lParam);
+	LRESULT onTimer(WPARAM wParam);
+	LRESULT onMouseMove(WPARAM wParam, LPARAM lParam);
+	LRESULT onMouseWheel(WPARAM wParam, LPARAM lParam);
+	LRESULT onLButtonDown(WPARAM wParam, LPARAM lParam);
+	LRESULT onLButtonUp(WPARAM wParam, LPARAM lParam);
+	LRESULT onRButtonUp(WPARAM wParam, LPARAM lParam);
+	LRESULT onMButtonUp(WPARAM wParam, LPARAM lParam);
 
 	struct Menu
 	{
@@ -57,33 +58,21 @@ private:
 			kLabelStartIndex
 		};
 	};
-	struct MenuBar
+	struct MenuBar { enum { kFile, kSetting, kImage }; };
+	struct EventMessage { enum { kAudioPlayer = WM_USER + 1 }; };
+	struct Timer { enum { kText = 1, }; };
+
+	struct MouseState
 	{
-		enum
-		{
-			kFile, kSetting, kImage
-		};
-	};
-	struct EventMessage
-	{
-		enum
-		{
-			kAudioPlayer = WM_USER + 1
-		};
-	};
-	struct Timer
-	{
-		enum
-		{
-			kText = 1,
-		};
+		bool wasLeftPressed = false;
+		bool hasLeftBeenDragged = false;
+		bool wasLeftCombined = false;
+		bool wasRightCombined = false;
+		/// @brief Last mouse position in client coördinate
+		POINT lastMousePos{};
 	};
 
-	POINT m_lastCursorPos{};
-	bool m_wasLeftPressed = false;
-	bool m_hasLeftBeenDragged = false;
-	bool m_wasLeftCombinated = false;
-	bool m_wasRightCombinated = false;
+	MouseState m_mouseState;
 
 	HMENU m_hMenuBar = nullptr;
 	bool m_isBarHidden = false;
@@ -93,24 +82,25 @@ private:
 	std::vector<std::wstring> m_scriptFilePaths;
 	size_t m_nScriptFileIndex = 0;
 
-	void InitialiseMenuBar();
+	void initialiseMenuBar();
+	void showErrorMessageBox(const wchar_t* format, ...) const;
 
-	void MenuOnOpenFile();
-	void MenuOnNextFile();
-	void MenuOnForeFile();
+	void menuOnOpenFile();
+	void menuOnNextFile();
+	void menuOnForeFile();
 
-	void MenuOnVoiceSetting();
-	void MenuOnSoundSetting();
-	void MenuOnFontSetting();
-	void MenuOnSyncImage();
+	void menuOnVoiceSetting();
+	void menuOnSoundSetting();
+	void menuOnFontSetting();
+	void menuOnSyncImage();
 
-	void ToggleWindowBorderStyle();
-	bool SetMenuCheckState(unsigned int uiMenuIndex, unsigned int uiItemIndex, bool checked) const;
+	void toggleWindowBorderStyle();
+	bool setMenuCheckState(unsigned int uiMenuIndex, unsigned int uiItemIndex, bool checked) const;
 
-	bool SetupScenario(const wchar_t* pwzFilePath);
-	void JumpScene(size_t nIndex);
+	bool setupScenario(const std::wstring& filePath);
+	void jumpScene(size_t nIndex);
 
-	void UpdateScreen();
+	void updateScreen();
 
 	std::unique_ptr<CD2ImageDrawer> m_pD2ImageDrawer;
 	std::unique_ptr<CD2TextWriter> m_pD2TextWriter;
@@ -120,10 +110,10 @@ private:
 	std::unique_ptr<CLilyanSceneCrafter> m_pSceneCrafter;
 	std::unique_ptr<CFontSettingDialogue> m_pFontSettingDialogue;
 
-	void ShiftText(bool bForward);
-	void UpdateText();
-	void OnAudioPlayerEvent(unsigned long ulEvent);
-	void AutoTexting();
+	void shiftText(bool bForward);
+	void updateText();
+	void onAudioPlayerEvent(unsigned long ulEvent);
+	void autoTexting();
 };
 
 #endif //MAIN_WINDOW_H_

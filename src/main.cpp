@@ -20,20 +20,20 @@
 #include "main_window.h"
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-    _In_opt_ HINSTANCE hPrevInstance,
-    _In_ LPWSTR    lpCmdLine,
-    _In_ int       nCmdShow)
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPWSTR    lpCmdLine,
+	_In_ int       nCmdShow)
 {
-    setlocale(LC_ALL, ".utf8");
+	::setlocale(LC_ALL, ".utf8");
 
-    int iRet = 0;
-    CMainWindow sWindow;
-    bool bRet = sWindow.Create(hInstance, L"LiLyAnge player");
-    if (bRet)
-    {
-        ::ShowWindow(sWindow.GetHwnd(), nCmdShow);
-        iRet = sWindow.MessageLoop();
-    }
+	int iRet = 0;
+	CMainWindow mainWindow;
+	bool bRet = mainWindow.create(hInstance, L"LiLyAnge player");
+	if (bRet)
+	{
+		::ShowWindow(mainWindow.getHwnd(), nCmdShow);
+		iRet = mainWindow.messageLoop();
+	}
 
-    return iRet;
+	return iRet;
 }

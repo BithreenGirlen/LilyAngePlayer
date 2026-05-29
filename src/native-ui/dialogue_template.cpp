@@ -1,6 +1,4 @@
 ﻿
-#include <string>
-
 #include "dialogue_template.h"
 
 
@@ -11,24 +9,29 @@ CDialogueTemplate::CDialogueTemplate()
 
 CDialogueTemplate::~CDialogueTemplate()
 {
-
+	release();
 }
 
-void CDialogueTemplate::SetWindowSize(unsigned short usWidth, unsigned short usHeight)
+void CDialogueTemplate::setWindowSize(unsigned short usWidth, unsigned short usHeight)
 {
 	m_usWidth = usWidth;
 	m_usHeight = usHeight;
 }
 
-void CDialogueTemplate::MakeWindowResizable(bool bResizable)
+void CDialogueTemplate::makeWindowResizable(bool isResizable)
 {
-	m_bResizable = bResizable;
+	m_isResizable = isResizable;
 }
 
-std::vector<unsigned char> CDialogueTemplate::Generate(const wchar_t* wszWindowTitle)
+void CDialogueTemplate::makeWindowChild(bool isChild)
+{
+	m_isChild = isChild;
+}
+
+const unsigned char* CDialogueTemplate::generate(const wchar_t* windowTitle)
 {
 	/*
-	* Dialogue box template without any controls.
+	* Dialogue template without child controls.
 	* https://learn.microsoft.com/en-us/windows/win32/dlgbox/dlgtemplateex
 	*/
 #pragma pack(push, 1)
@@ -55,54 +58,73 @@ std::vector<unsigned char> CDialogueTemplate::Generate(const wchar_t* wszWindowT
 		BYTE italic = TRUE;
 		BYTE characterset = ANSI_CHARSET;
 	};
+#pragma pack (pop)
 
+	static constexpr const wchar_t defaultTitle[] = L"Dialogue";
+	static constexpr const size_t defaultTitleSize = sizeof(defaultTitle);
+	static constexpr const wchar_t defaultTypeFace[] = L"MS Shell Dlg";
+	static constexpr const size_t defaultTypeFaceSize = sizeof(defaultTypeFace);
 	struct SDialogueTemplateEx
 	{
 		SDialogueTemplateHeader header;
-		std::wstring wstrTitle = L"Dialogue";
+		const wchar_t* title = defaultTitle;
 		SDialogueTemplateFont font;
-		std::wstring wstrTypeface = L"MS Shell Dlg";
+		const wchar_t* typeFace = defaultTypeFace;
 	};
-#pragma pack (pop)
 
-	SDialogueTemplateEx sDialogueTemplateEx;
+	SDialogueTemplateEx dialogueTemplateEx;
 
-	sDialogueTemplateEx.header.cx = m_usWidth;
-	sDialogueTemplateEx.header.cy = m_usHeight;
+	dialogueTemplateEx.header.cx = m_usWidth;
+	dialogueTemplateEx.header.cy = m_usHeight;
 
-	if (m_bResizable)
+	if (m_isChild)
 	{
-		sDialogueTemplateEx.header.style |= WS_THICKFRAME & ~DS_MODALFRAME;
+		dialogueTemplateEx.header.style &= ~(WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_BORDER);
+		dialogueTemplateEx.header.style |= WS_CHILD;
 	}
-	if (wszWindowTitle != nullptr)
+	else if (m_isResizable)
 	{
-		sDialogueTemplateEx.wstrTitle = wszWindowTitle;
+		dialogueTemplateEx.header.style &= ~DS_MODALFRAME;
+		dialogueTemplateEx.header.style |= WS_THICKFRAME;
 	}
 
-	std::vector<unsigned char> v;
-	v.resize(
-		sizeof(SDialogueTemplateHeader) +
-		(sDialogueTemplateEx.wstrTitle.size() + 1LL) * sizeof(wchar_t) +
-		sizeof(SDialogueTemplateFont) +
-		(sDialogueTemplateEx.wstrTypeface.size() + 1LL) * sizeof(wchar_t)
-	);
+	size_t titleSize = defaultTitleSize;
+	if (windowTitle != nullptr)
+	{
+		dialogueTemplateEx.title = windowTitle;
+		titleSize = (wcslen(windowTitle) + 1) * sizeof(wchar_t);
+	}
+
+	release();
+	size_t dataSize = sizeof(SDialogueTemplateHeader) + titleSize + sizeof(SDialogueTemplateFont) + defaultTypeFaceSize;
+	m_pData = static_cast<unsigned char*>(malloc(dataSize));
+	if (m_pData == nullptr)return nullptr;
 
 	size_t nWritten = 0;
 	size_t nLen = sizeof(SDialogueTemplateHeader);
-	memcpy(&v[nWritten], &sDialogueTemplateEx.header, nLen);
+	memcpy(&m_pData[nWritten], &dialogueTemplateEx.header, nLen);
 	nWritten += nLen;
 
-	nLen = (sDialogueTemplateEx.wstrTitle.size() + 1LL) * sizeof(wchar_t);
-	memcpy(&v[nWritten], sDialogueTemplateEx.wstrTitle.c_str(), nLen);
+	nLen = titleSize;
+	memcpy(&m_pData[nWritten], dialogueTemplateEx.title, nLen);
 	nWritten += nLen;
 
 	nLen = sizeof(SDialogueTemplateFont);
-	memcpy(&v[nWritten], &sDialogueTemplateEx.font, nLen);
+	memcpy(&m_pData[nWritten], &dialogueTemplateEx.font, nLen);
 	nWritten += nLen;
 
-	nLen = (sDialogueTemplateEx.wstrTypeface.size() + 1LL) * sizeof(wchar_t);
-	memcpy(&v[nWritten], sDialogueTemplateEx.wstrTypeface.c_str(), nLen);
+	nLen = defaultTypeFaceSize;
+	memcpy(&m_pData[nWritten], dialogueTemplateEx.typeFace, nLen);
 	nWritten += nLen;
 
-	return v;
+	return m_pData;
+}
+
+void CDialogueTemplate::release()
+{
+	if (m_pData != nullptr)
+	{
+		free(m_pData);
+		m_pData = nullptr;
+	}
 }

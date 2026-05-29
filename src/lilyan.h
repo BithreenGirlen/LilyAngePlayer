@@ -9,11 +9,11 @@
 namespace lilyan
 {
 	bool LoadScenario(
-		const std::wstring& wstrScriptFilePath,
+		const std::wstring& scriptFilePath,
 		std::vector<adv::TextDatum>& textData,
 		std::vector<std::wstring>& imageFilePaths,
 		std::vector<adv::SceneDatum>& sceneData,
-		std::wstring& wstrTitle,
+		std::wstring& sceneTitle,
 		std::vector<adv::SoundDatum>& soundData,
 		std::vector <adv::LabelDatum>& labelData
 	);

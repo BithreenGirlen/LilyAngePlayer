@@ -41,18 +41,6 @@
     <ClInclude Include="..\src\mf_media_player.h">
       <Filter>Header File</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\native-ui\dialogue_controls.h">
-      <Filter>Header File</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\native-ui\dialogue_template.h">
-      <Filter>Header File</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\native-ui\font_setting_dialogue.h">
-      <Filter>Header File</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\native-ui\media_setting_dialogue.h">
-      <Filter>Header File</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\text_utility.h">
       <Filter>Header File</Filter>
     </ClInclude>
@@ -77,6 +65,21 @@
     <ClInclude Include="pch.h">
       <Filter>Resource File</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\native-ui\dialogue_controls.h">
+      <Filter>Header File\native-ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\native-ui\dialogue_template.h">
+      <Filter>Header File\native-ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\native-ui\font_setting_dialogue.h">
+      <Filter>Header File\native-ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\native-ui\media_setting_dialogue.h">
+      <Filter>Header File\native-ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\native-ui\window_menu.h">
+      <Filter>Header File\native-ui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\d2_image_drawer.cpp">
@@ -100,18 +103,6 @@
     <ClCompile Include="..\src\mf_media_player.cpp">
       <Filter>Source File</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\native-ui\dialogue_controls.cpp">
-      <Filter>Source File</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\native-ui\dialogue_template.cpp">
-      <Filter>Source File</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\native-ui\font_setting_dialogue.cpp">
-      <Filter>Source File</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\native-ui\media_setting_dialogue.cpp">
-      <Filter>Source File</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\view_manager.cpp">
       <Filter>Source File</Filter>
     </ClCompile>
@@ -132,6 +123,18 @@
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Resource File</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\native-ui\dialogue_controls.cpp">
+      <Filter>Source File\native-ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\native-ui\font_setting_dialogue.cpp">
+      <Filter>Source File\native-ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\native-ui\dialogue_template.cpp">
+      <Filter>Source File\native-ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\native-ui\media_setting_dialogue.cpp">
+      <Filter>Source File\native-ui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -7,8 +7,8 @@ namespace adv
 {
 	struct TextDatum
 	{
-		std::wstring wstrText;
-		std::wstring wstrVoicePath;
+		std::wstring message;
+		std::wstring voiceFilePath;
 	};
 
 	struct SceneDatum
@@ -20,12 +20,12 @@ namespace adv
 	struct SoundDatum
 	{
 		size_t nSceneIndex = 0;
-		std::wstring wstrSoundFilePath;
+		std::wstring soundFilePath;
 	};
 
 	struct LabelDatum
 	{
-		std::wstring wstrCaption;
+		std::wstring caption;
 		size_t nSceneIndex = 0;
 	};
 }

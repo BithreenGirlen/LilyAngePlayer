@@ -9,15 +9,15 @@ public:
     CViewManager(HWND hWnd);
     ~CViewManager();
 
-    void SetBaseSize(unsigned int uiWidth, unsigned int uiHeight);
-    void Rescale(bool bUpscale);
-    void SetOffset(int iX, int iY);
-    void ResetZoom();
-    void OnStyleChanged();
+    void setBaseSize(unsigned int uiWidth, unsigned int uiHeight);
+    void rescale(bool toUpscale);
+    void setOffset(int iX, int iY);
+    void resetZoom();
+    void onStyleChanged();
 
-    float GetScale() const { return m_fScale; };
-    float GetXOffset() const { return m_fXOffset; };
-    float GetYOffset() const { return m_fYOffset; };
+    float getScale() const { return m_fScale; };
+    float getOffsetX() const { return m_fOffsetX; };
+    float getOffsetY() const { return m_fOffsetY; };
 private:
     enum Constants { kBaseWidth = 1280, kBaseHeight = 720 };
 
@@ -26,16 +26,15 @@ private:
     unsigned int m_uiBaseWidth = Constants::kBaseWidth;
     unsigned int m_uiBaseHeight = Constants::kBaseHeight;
     float m_fDefaultScale = 1.f;
-    float m_fThresholdScale = 1.f;
 
     float m_fScale = 1.f;
-    float m_fXOffset = 0;
-    float m_fYOffset = 0;
+    float m_fOffsetX = 0;
+    float m_fOffsetY = 0;
 
-    void WorkOutDefaultScale();
-    void ResizeWindow();
-    void AdjustOffset();
-    void RequestRedraw();
+    void workOutDefaultScale();
+    void resizeWindow();
+    void adjustOffset();
+    void requestRedraw() const;
 };
 
 #endif // !VIEW_MANAGER_H_

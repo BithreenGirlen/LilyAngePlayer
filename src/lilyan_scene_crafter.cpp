@@ -16,32 +16,31 @@ CLilyanSceneCrafter::~CLilyanSceneCrafter()
 
 }
 
-bool CLilyanSceneCrafter::LoadScenario(const wchar_t* pwzScenarioFilePath)
+bool CLilyanSceneCrafter::loadScenario(const std::wstring& scenarioFilePath)
 {
-	if (pwzScenarioFilePath == nullptr)return false;
-	ClearScenarioData();
+	clearScenarioData();
 
-	std::vector<std::wstring> wstrImageFilePaths;
-	lilyan::LoadScenario(pwzScenarioFilePath, m_textData, wstrImageFilePaths, m_sceneData, m_wstrSceneTitle, m_soundData, m_labelData);
-	if (!m_wstrSceneTitle.empty() && m_wstrSceneTitle[0] == L';')
+	std::vector<std::wstring> imageFilePaths;
+	lilyan::LoadScenario(scenarioFilePath, m_textData, imageFilePaths, m_sceneData, m_sceneTitle, m_soundData, m_labelData);
+	if (!m_sceneTitle.empty() && m_sceneTitle[0] == L';')
 	{
-		m_wstrSceneTitle.erase(0, 1);
+		m_sceneTitle.erase(0, 1);
 	}
 
-	for (const auto& wstrImageFilePath : wstrImageFilePaths)
+	for (const auto& imageFilePath : imageFilePaths)
 	{
-		ImportWholeImage(wstrImageFilePath);
+		importWholeImage(imageFilePath);
 	}
 
 	return !m_images.empty();
 }
 
-bool CLilyanSceneCrafter::HasScenarioData() const
+bool CLilyanSceneCrafter::hasScenarioData() const
 {
 	return !m_sceneData.empty();
 }
-/*画像寸法取得*/
-void CLilyanSceneCrafter::GetCurrentImageSize(unsigned int* uiWidth, unsigned int* uiHeight)
+/* 画像寸法取得 */
+void CLilyanSceneCrafter::getCurrentImageSize(unsigned int* width, unsigned int* height)
 {
 	if (m_nSceneIndex < m_sceneData.size())
 	{
@@ -49,45 +48,45 @@ void CLilyanSceneCrafter::GetCurrentImageSize(unsigned int* uiWidth, unsigned in
 		if (nImageIndex < m_images.size())
 		{
 			D2D1_SIZE_U s = m_images[nImageIndex]->GetPixelSize();
-			*uiWidth = s.width;
-			*uiHeight = s.height;
+			*width = s.width;
+			*height = s.height;
 		}
 	}
 }
 
-void CLilyanSceneCrafter::GetLargestImageSize(unsigned int* uiWidth, unsigned int* uiHeight)
+void CLilyanSceneCrafter::getLargestImageSize(unsigned int* width, unsigned int* height)
 {
-	unsigned int uiMaxWidth = 0;
-	unsigned int uiMaxHeight = 0;
+	unsigned int largestWidth = 0;
+	unsigned int largestHeight = 0;
 
 	for (const auto& pD2Bitmap : m_images)
 	{
 		D2D1_SIZE_U s = pD2Bitmap->GetPixelSize();
 
-		uiMaxWidth = (std::max)(uiMaxWidth, s.width);
-		uiMaxHeight = (std::max)(uiMaxHeight, s.height);;
+		largestWidth = (std::max)(largestWidth, s.width);
+		largestHeight = (std::max)(largestHeight, s.height);;
 	}
 
-	if (uiWidth != nullptr)*uiWidth = uiMaxWidth;
-	if (uiHeight != nullptr)*uiHeight = uiMaxHeight;
+	if (width != nullptr)*width = largestWidth;
+	if (height != nullptr)*height = largestHeight;
 }
-/*題名受け渡し*/
-std::wstring& CLilyanSceneCrafter::GetSceneTitle()
+/* 題名受け渡し */
+const std::wstring& CLilyanSceneCrafter::getSceneTitle() const noexcept
 {
-	return m_wstrSceneTitle;
+	return m_sceneTitle;
 }
 
-void CLilyanSceneCrafter::ToggleImageSync()
+void CLilyanSceneCrafter::syncImage(bool synchronised)
 {
-	m_isImageSynced ^= true;
+	m_isImageSynced = synchronised;
 }
 
-bool CLilyanSceneCrafter::IsImageSynced() const
+bool CLilyanSceneCrafter::isImageSynced() const
 {
 	return m_isImageSynced;
 }
 
-void CLilyanSceneCrafter::ShiftImage()
+void CLilyanSceneCrafter::shiftForwardImage()
 {
 	if (!m_isImageSynced)
 	{
@@ -95,12 +94,12 @@ void CLilyanSceneCrafter::ShiftImage()
 		if (m_nImageIndex >= m_images.size())m_nImageIndex = 0;
 	}
 }
-/*場面移行*/
-void CLilyanSceneCrafter::ShiftScene(bool bForward)
+/* 場面移行 */
+void CLilyanSceneCrafter::shiftScene(bool forward)
 {
 	if (m_sceneData.empty())return;
 
-	if (bForward)
+	if (forward)
 	{
 		if (++m_nSceneIndex >= m_sceneData.size())
 		{
@@ -115,13 +114,13 @@ void CLilyanSceneCrafter::ShiftScene(bool bForward)
 		}
 	}
 }
-/*最終場面是否*/
-bool CLilyanSceneCrafter::HasReachedLastScene()
+/* 最終場面是否 */
+bool CLilyanSceneCrafter::hasReachedLastScene()
 {
 	return m_nSceneIndex == m_sceneData.size() - 1;
 }
-/*現在の画像受け渡し*/
-ID2D1Bitmap* CLilyanSceneCrafter::GetCurrentImage()
+/* 現在の画像受け渡し */
+ID2D1Bitmap* CLilyanSceneCrafter::getCurrentImage()
 {
 	if (m_nSceneIndex < m_sceneData.size())
 	{
@@ -138,18 +137,16 @@ ID2D1Bitmap* CLilyanSceneCrafter::GetCurrentImage()
 
 	return nullptr;
 }
-/*文章生成*/
-std::wstring CLilyanSceneCrafter::GetCurrentFormattedText()
+/* 文章生成 */
+std::wstring CLilyanSceneCrafter::getCurrentFormattedText()
 {
 	std::wstring wstr;
 	if (m_nSceneIndex < m_sceneData.size())
 	{
-		wstr.reserve(128);
 		size_t nTextIndex = m_sceneData[m_nSceneIndex].nTextIndex;
-
 		if (nTextIndex < m_textData.size())
 		{
-			wstr = m_textData[nTextIndex].wstrText;
+			wstr = m_textData[nTextIndex].message;
 			if (!wstr.empty() && wstr.back() != L'\n')wstr.push_back(L'\n');
 			wstr += std::to_wstring(nTextIndex + 1) + L"/" + std::to_wstring(m_textData.size());
 		}
@@ -157,22 +154,22 @@ std::wstring CLilyanSceneCrafter::GetCurrentFormattedText()
 
 	return wstr;
 }
-/*現在の音声ファイル経路受け渡し*/
-const wchar_t* CLilyanSceneCrafter::GetCurrentVoiceFilePath()
+/* 現在の音声ファイル経路受け渡し */
+const wchar_t* CLilyanSceneCrafter::getCurrentVoiceFilePath()
 {
 	if (m_nSceneIndex < m_sceneData.size())
 	{
 		size_t nTextIndex = m_sceneData[m_nSceneIndex].nTextIndex;
 		if (nTextIndex < m_textData.size())
 		{
-			return m_textData[nTextIndex].wstrVoicePath.c_str();
+			return m_textData[nTextIndex].voiceFilePath.c_str();
 		}
 	}
 
 	return nullptr;
 }
-/*現在の効果音ファイル経路受け渡し*/
-const wchar_t* CLilyanSceneCrafter::GetCurrentSoundFilePath()
+/* 現在の効果音ファイル経路受け渡し */
+const wchar_t* CLilyanSceneCrafter::getCurrentSoundFilePath()
 {
 	const auto iter = std::find_if
 	(
@@ -185,18 +182,18 @@ const wchar_t* CLilyanSceneCrafter::GetCurrentSoundFilePath()
 
 	if (iter != m_soundData.cend())
 	{
-		return m_soundData[std::distance(m_soundData.begin(), iter)].wstrSoundFilePath.c_str();
+		return m_soundData[std::distance(m_soundData.begin(), iter)].soundFilePath.c_str();
 	}
 
 	return nullptr;
 }
 
-const std::vector<adv::LabelDatum>& CLilyanSceneCrafter::GetLabelData() const
+const std::vector<adv::LabelDatum>& CLilyanSceneCrafter::getLabelData() const noexcept
 {
 	return m_labelData;
 }
 
-bool CLilyanSceneCrafter::JumpToLabel(size_t nLabelIndex)
+bool CLilyanSceneCrafter::jumpToLabel(size_t nLabelIndex)
 {
 	if (nLabelIndex < m_labelData.size())
 	{
@@ -211,8 +208,8 @@ bool CLilyanSceneCrafter::JumpToLabel(size_t nLabelIndex)
 	}
 	return false;
 }
-/*消去*/
-void CLilyanSceneCrafter::ClearScenarioData()
+/* 消去 */
+void CLilyanSceneCrafter::clearScenarioData()
 {
 	m_textData.clear();
 
@@ -222,30 +219,30 @@ void CLilyanSceneCrafter::ClearScenarioData()
 	m_images.clear();
 	m_nImageIndex = 0;
 
-	m_wstrSceneTitle.clear();
+	m_sceneTitle.clear();
 
 	m_soundData.clear();
 
 	m_labelData.clear();
 }
 
-ID2D1Bitmap* CLilyanSceneCrafter::ImportWholeImage(const std::wstring& wstrImageFilePath)
+ID2D1Bitmap* CLilyanSceneCrafter::importWholeImage(const std::wstring& iImageFilePath)
 {
 	ID2D1Bitmap* p = nullptr;
 
-	SImageFrame sImageFrame{};
-	bool bRet = win_image::LoadImageToMemory(wstrImageFilePath.c_str(), &sImageFrame);
+	win_image::SImageFrame imageFrame{};
+	bool bRet = win_image::LoadImageToMemory(iImageFilePath.c_str(), &imageFrame);
 	if (bRet)
 	{
 		CComPtr<ID2D1Bitmap> pD2d1Bitmap;
 
 		HRESULT hr = m_pStoredD2d1DeviceContext->CreateBitmap(
-			D2D1::SizeU(sImageFrame.uiWidth, sImageFrame.uiHeight),
+			D2D1::SizeU(imageFrame.uiWidth, imageFrame.uiHeight),
 			D2D1::BitmapProperties(D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE)),
 			&pD2d1Bitmap);
 
-		D2D1_RECT_U rc = { 0, 0, sImageFrame.uiWidth, sImageFrame.uiHeight };
-		hr = pD2d1Bitmap->CopyFromMemory(&rc, sImageFrame.pixels.data(), sImageFrame.iStride);
+		D2D1_RECT_U rc = { 0, 0, imageFrame.uiWidth, imageFrame.uiHeight };
+		hr = pD2d1Bitmap->CopyFromMemory(&rc, imageFrame.pixels.data(), imageFrame.uiStride);
 		if (SUCCEEDED(hr))
 		{
 			m_images.push_back(std::move(pD2d1Bitmap));

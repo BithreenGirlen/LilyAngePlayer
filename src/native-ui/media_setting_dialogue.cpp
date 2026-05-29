@@ -2,15 +2,14 @@
  * Dialogue-box-like behavior window; modal only.
  *===================================================================================*/
 
-#include <string>
-
 #include "media_setting_dialogue.h"
 
 #include "../mf_media_player.h"
 
 CMediaSettingDialogue::CMediaSettingDialogue()
 {
-	m_hFont = ::CreateFont(Constants::kFontSize, 0, 0, 0, FW_REGULAR, FALSE, FALSE, FALSE, EASTEUROPE_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, L"DFKai-SB");
+	int fontHeight = static_cast<int>(Constants::kFontSize * ::GetDpiForSystem() / 96.f);
+	m_hFont = ::CreateFontW(fontHeight, 0, 0, 0, FW_REGULAR, FALSE, FALSE, FALSE, EASTEUROPE_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, L"Yu mincho");
 }
 
 CMediaSettingDialogue::~CMediaSettingDialogue()
@@ -21,7 +20,7 @@ CMediaSettingDialogue::~CMediaSettingDialogue()
 	}
 }
 
-bool CMediaSettingDialogue::Open(HINSTANCE hInstance, HWND hWnd, void* pMediaPlayer, const wchar_t* pwzWindowName, HICON hIcon)
+bool CMediaSettingDialogue::open(HINSTANCE hInstance, HWND hWnd, void* pMediaPlayer, const wchar_t* windowName)
 {
 	WNDCLASSEXW wcex{};
 
@@ -34,50 +33,34 @@ bool CMediaSettingDialogue::Open(HINSTANCE hInstance, HWND hWnd, void* pMediaPla
 	wcex.hInstance = hInstance;
 	wcex.hCursor = ::LoadCursor(nullptr, IDC_ARROW);
 	wcex.hbrBackground = ::GetSysColorBrush(COLOR_BTNFACE);
-	wcex.lpszClassName = m_swzClassName;
-	if (hIcon != nullptr)
-	{
-		wcex.hIcon = hIcon;
-		wcex.hIconSm = hIcon;
-	}
+	wcex.lpszClassName = m_className;
 
 	if (::RegisterClassExW(&wcex))
 	{
-		m_hInstance = hInstance;
 		m_pMediaPlayer = pMediaPlayer;
 
-		UINT uiDpi = ::GetDpiForSystem();
-		int iWindowWidth = ::MulDiv(100, uiDpi, USER_DEFAULT_SCREEN_DPI);
-		int iWindowHeight = ::MulDiv(200, uiDpi, USER_DEFAULT_SCREEN_DPI);
+		UINT dpi = ::GetDpiForSystem();
+		int windowWidth = ::MulDiv(100, dpi, USER_DEFAULT_SCREEN_DPI);
+		int windowHeight = ::MulDiv(200, dpi, USER_DEFAULT_SCREEN_DPI);
 
 		RECT rect{};
 		::GetClientRect(hWnd, &rect);
 		POINT parentClientPos{ rect.left, rect.top };
 		::ClientToScreen(hWnd, &parentClientPos);
 
-		m_hWnd = ::CreateWindowW(m_swzClassName, pwzWindowName, WS_OVERLAPPEDWINDOW & ~WS_MINIMIZEBOX & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME,
-			parentClientPos.x, parentClientPos.y, iWindowWidth, iWindowHeight, hWnd, nullptr, hInstance, this);
+		m_hWnd = ::CreateWindowW(m_className, windowName, WS_OVERLAPPEDWINDOW & ~WS_MINIMIZEBOX & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME,
+			parentClientPos.x, parentClientPos.y, windowWidth, windowHeight, hWnd, nullptr, hInstance, this);
 		if (m_hWnd != nullptr)
 		{
-			MessageLoop();
+			messageLoop();
 			return true;
 		}
-		else
-		{
-			std::wstring wstrMessage = L"CreateWindowExW failed; code: " + std::to_wstring(::GetLastError());
-			::MessageBoxW(nullptr, wstrMessage.c_str(), L"Error", MB_ICONERROR);
-		}
-	}
-	else
-	{
-		std::wstring wstrMessage = L"RegisterClassW failed; code: " + std::to_wstring(::GetLastError());
-		::MessageBoxW(nullptr, wstrMessage.c_str(), L"Error", MB_ICONERROR);
 	}
 
 	return false;
 }
 
-int CMediaSettingDialogue::MessageLoop()
+int CMediaSettingDialogue::messageLoop()
 {
 	MSG msg;
 
@@ -91,14 +74,10 @@ int CMediaSettingDialogue::MessageLoop()
 		}
 		else if (bRet == 0)
 		{
-			/*ループ終了*/
 			return static_cast<int>(msg.wParam);
 		}
 		else
 		{
-			/*ループ異常*/
-			std::wstring wstrMessage = L"GetMessageW failed; code: " + std::to_wstring(::GetLastError());
-			::MessageBoxW(nullptr, wstrMessage.c_str(), L"Error", MB_ICONERROR);
 			return -1;
 		}
 	}
@@ -119,32 +98,32 @@ LRESULT CMediaSettingDialogue::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
 	pThis = reinterpret_cast<CMediaSettingDialogue*>(::GetWindowLongPtr(hWnd, GWLP_USERDATA));
 	if (pThis != nullptr)
 	{
-		return pThis->HandleMessage(hWnd, uMsg, wParam, lParam);
+		return pThis->handleMessage(hWnd, uMsg, wParam, lParam);
 	}
 
 	return ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
 /*メッセージ処理*/
-LRESULT CMediaSettingDialogue::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CMediaSettingDialogue::handleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
 	case WM_CREATE:
-		return OnCreate(hWnd);
+		return onCreate(hWnd);
 	case WM_DESTROY:
-		return OnDestroy();
+		return onDestroy();
 	case WM_CLOSE:
-		return OnClose();
+		return onClose();
 	case WM_PAINT:
-		return OnPaint();
+		return onPaint();
 	case WM_SIZE:
-		return OnSize();
+		return onSize();
 	case WM_NOTIFY:
-		return OnNotify(wParam, lParam);
+		return onNotify(wParam, lParam);
 	case WM_COMMAND:
-		return OnCommand(wParam, lParam);
+		return onCommand(wParam, lParam);
 	case WM_VSCROLL:
-		return OnVScroll(wParam, lParam);
+		return onVScroll(wParam, lParam);
 	default:
 		break;
 	}
@@ -152,42 +131,50 @@ LRESULT CMediaSettingDialogue::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam
 	return ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
 /*WM_CREATE*/
-LRESULT CMediaSettingDialogue::OnCreate(HWND hWnd)
+LRESULT CMediaSettingDialogue::onCreate(HWND hWnd)
 {
 	m_hWnd = hWnd;
 
-	CreateSliders();
-	m_volumeStatic.Create(L"Volume", m_hWnd);
-	m_rateStatic.Create(L"Rate", m_hWnd);
+	createSliders();
+	m_volumeStatic.create(L"Volume", m_hWnd);
+	m_rateStatic.create(L"Rate", m_hWnd);
 
 	::ShowWindow(hWnd, SW_NORMAL);
 
 	::EnableWindow(::GetWindow(m_hWnd, GW_OWNER), FALSE);
 
-	::EnumChildWindows(m_hWnd, SetFontCallback, reinterpret_cast<LPARAM>(m_hFont));
+	const auto FontCallback = [](HWND hWnd, LPARAM lParam)
+		-> BOOL
+		{
+			::SendMessage(hWnd, WM_SETFONT, static_cast<WPARAM>(lParam), 0);
+			/* TRUE: 続行, FALSE: 終了 */
+			return TRUE;
+		};
+
+	::EnumChildWindows(m_hWnd, FontCallback, reinterpret_cast<LPARAM>(m_hFont));
 
 	return 0;
 }
 /*WM_DESTROY*/
-LRESULT CMediaSettingDialogue::OnDestroy()
+LRESULT CMediaSettingDialogue::onDestroy()
 {
 	::PostQuitMessage(0);
 	return 0;
 }
 /*WM_CLOSE*/
-LRESULT CMediaSettingDialogue::OnClose()
+LRESULT CMediaSettingDialogue::onClose()
 {
 	HWND hOwnerWnd = ::GetWindow(m_hWnd, GW_OWNER);
 	::EnableWindow(hOwnerWnd, TRUE);
 	::BringWindowToTop(hOwnerWnd);
 
 	::DestroyWindow(m_hWnd);
-	::UnregisterClassW(m_swzClassName, m_hInstance);
+	::UnregisterClassW(m_className, ::GetModuleHandleW(nullptr));
 
 	return 0;
 }
 /*WM_PAINT*/
-LRESULT CMediaSettingDialogue::OnPaint()
+LRESULT CMediaSettingDialogue::onPaint()
 {
 	PAINTSTRUCT ps;
 	HDC hdc = ::BeginPaint(m_hWnd, &ps);
@@ -197,63 +184,48 @@ LRESULT CMediaSettingDialogue::OnPaint()
 	return 0;
 }
 /*WM_SIZE*/
-LRESULT CMediaSettingDialogue::OnSize()
+LRESULT CMediaSettingDialogue::onSize()
 {
 	RECT rect;
 	::GetClientRect(m_hWnd, &rect);
-	long w = rect.right - rect.left;
-	long h = rect.bottom - rect.top;
+	long clientWidth = rect.right - rect.left;
+	long clientHeight = rect.bottom - rect.top;
 
-	long x_space = w / 100 * 10;
-	long y_space = h / 100;
+	long spaceX = clientWidth / 96 * 10;
+	long spaceY = clientHeight / 96;
 
-	long lTextSpace = Constants::kFontSize;
+	long textSpace = Constants::kFontSize;
 
-	if (m_volumeIntSlider.GetHwnd() != nullptr)
-	{
-		::MoveWindow(m_volumeIntSlider.GetHwnd(), x_space, y_space + lTextSpace, w / 2 - x_space * 2, h - y_space * 2 - lTextSpace, TRUE);
-	}
+	::MoveWindow(m_volumeIntSlider.getHwnd(), spaceX, spaceY + textSpace, clientWidth / 2 - spaceX * 2, clientHeight - spaceY * 2 - textSpace, TRUE);
+	::MoveWindow(m_volumeStatic.getHwnd(), spaceX, spaceY, Constants::kTextWidth, Constants::kFontSize, TRUE);
 
-	if (m_volumeStatic.GetHwnd() != nullptr)
-	{
-		::MoveWindow(m_volumeStatic.GetHwnd(), x_space, y_space, Constants::kTextWidth, Constants::kFontSize, TRUE);
-	}
-
-
-	if (m_rateFloatSlider.GetHwnd() != nullptr)
-	{
-		::MoveWindow(m_rateFloatSlider.GetHwnd(), w / 2 + x_space, y_space + lTextSpace, w / 2 - x_space * 2, h - y_space * 2 - lTextSpace, TRUE);
-	}
-
-	if (m_rateStatic.GetHwnd() != nullptr)
-	{
-		::MoveWindow(m_rateStatic.GetHwnd(), w / 2 + x_space, y_space, Constants::kTextWidth, Constants::kFontSize, TRUE);
-	}
+	::MoveWindow(m_rateFloatSlider.getHwnd(), clientWidth / 2 + spaceX, spaceY + textSpace, clientWidth / 2 - spaceX * 2, clientHeight - spaceY * 2 - textSpace, TRUE);
+	::MoveWindow(m_rateStatic.getHwnd(), clientWidth / 2 + spaceX, spaceY, Constants::kTextWidth, Constants::kFontSize, TRUE);
 
 	return 0;
 }
 /*WM_NOTIFY*/
-LRESULT CMediaSettingDialogue::OnNotify(WPARAM wParam, LPARAM lParam)
+LRESULT CMediaSettingDialogue::onNotify(WPARAM wParam, LPARAM lParam)
 {
 	LPNMHDR pNmhdr = reinterpret_cast<LPNMHDR>(lParam);
 	if (pNmhdr != nullptr)
 	{
 		if (pNmhdr->code == TTN_NEEDTEXT)
 		{
-			if (pNmhdr->hwndFrom == m_rateFloatSlider.GetToolTipHandle())
+			if (pNmhdr->hwndFrom == m_rateFloatSlider.getToolTipHandle())
 			{
-				m_rateFloatSlider.OnToolTipNeedText(reinterpret_cast<LPTOOLTIPTEXT>(lParam));
+				m_rateFloatSlider.onToolTipNeedText(reinterpret_cast<LPTOOLTIPTEXTW>(lParam));
 			}
 		}
 	}
 	return 0;
 }
 /*WM_COMMAND*/
-LRESULT CMediaSettingDialogue::OnCommand(WPARAM wParam, LPARAM lParam)
+LRESULT CMediaSettingDialogue::onCommand(WPARAM wParam, LPARAM lParam)
 {
-	int wmId = LOWORD(wParam);
-	int wmKind = LOWORD(lParam);
-	if (wmKind == 0)
+	int id = LOWORD(wParam);
+	int msgSource = LOWORD(lParam);
+	if (msgSource == 0)
 	{
 		/*Menus*/
 	}
@@ -265,28 +237,28 @@ LRESULT CMediaSettingDialogue::OnCommand(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 /*WM_VSCROLL*/
-LRESULT CMediaSettingDialogue::OnVScroll(WPARAM wParam, LPARAM lParam)
+LRESULT CMediaSettingDialogue::onVScroll(WPARAM wParam, LPARAM lParam)
 {
 	CMfMediaPlayer* pPlayer = static_cast<CMfMediaPlayer*>(m_pMediaPlayer);
 	if (pPlayer != nullptr)
 	{
 		HANDLE hScroll = reinterpret_cast<HANDLE>(lParam);
 
-		if (hScroll == m_volumeIntSlider.GetHwnd())
+		if (hScroll == m_volumeIntSlider.getHwnd())
 		{
-			double dbVolume = m_volumeIntSlider.GetPosition() / 100.0;
-			if (dbVolume != pPlayer->GetCurrentVolume())
+			double volume = m_volumeIntSlider.getPosition() / 100.0;
+			if (volume != pPlayer->getCurrentVolume())
 			{
-				pPlayer->SetCurrentVolume(dbVolume);
+				pPlayer->setCurrentVolume(volume);
 			}
 		}
 
-		if (hScroll == m_rateFloatSlider.GetHwnd())
+		if (hScroll == m_rateFloatSlider.getHwnd())
 		{
-			double dbRate = m_rateFloatSlider.GetPosition();
-			if (dbRate != pPlayer->GetCurrentRate())
+			double playbackRate = m_rateFloatSlider.getPosition();
+			if (playbackRate != pPlayer->getCurrentRate())
 			{
-				pPlayer->SetCurrentRate(dbRate);
+				pPlayer->setCurrentRate(playbackRate);
 			}
 		}
 	}
@@ -294,36 +266,29 @@ LRESULT CMediaSettingDialogue::OnVScroll(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 /*音量調整・再生速度変更スライダ作成*/
-void CMediaSettingDialogue::CreateSliders()
+void CMediaSettingDialogue::createSliders()
 {
-	m_volumeIntSlider.Create(L"", m_hWnd, reinterpret_cast<HMENU>(Controls::kVolumeSlider), 0, 100, 20, true);
-	m_rateFloatSlider.Create(L"", m_hWnd, reinterpret_cast<HMENU>(Controls::kRateSkuder), 0.5f, 2.5f, 0.1f, 20, true);
+	m_volumeIntSlider.create(L"", m_hWnd, reinterpret_cast<HMENU>(Controls::kVolumeSlider), 0, 100, 20, true);
+	m_rateFloatSlider.create(L"", m_hWnd, reinterpret_cast<HMENU>(Controls::kRateSkuder), 0.5f, 2.5f, 0.1f, 20, true);
 
-	SetSliderPosition();
+	setSliderPosition();
 }
 /*現在値取得・表示*/
-void CMediaSettingDialogue::SetSliderPosition()
+void CMediaSettingDialogue::setSliderPosition()
 {
 	CMfMediaPlayer* pPlayer = static_cast<CMfMediaPlayer*>(m_pMediaPlayer);
 	if (pPlayer != nullptr)
 	{
-		if (m_volumeIntSlider.GetHwnd() != nullptr)
+		if (m_volumeIntSlider.getHwnd() != nullptr)
 		{
-			double dbVolume = pPlayer->GetCurrentVolume() * 100.0;
-			m_volumeIntSlider.SetPosition(static_cast<long long>(dbVolume));
+			double dbVolume = pPlayer->getCurrentVolume() * 100.0;
+			m_volumeIntSlider.setPosition(static_cast<long long>(dbVolume));
 		}
 
-		if (m_rateFloatSlider.GetHwnd() != nullptr)
+		if (m_rateFloatSlider.getHwnd() != nullptr)
 		{
-			double dbRate = pPlayer->GetCurrentRate();
-			m_rateFloatSlider.SetPosition(static_cast<float>(dbRate));
+			double dbRate = pPlayer->getCurrentRate();
+			m_rateFloatSlider.setPosition(static_cast<float>(dbRate));
 		}
 	}
-}
-/*EnumChildWindows CALLBACK*/
-BOOL CMediaSettingDialogue::SetFontCallback(HWND hWnd, LPARAM lParam)
-{
-	::SendMessage(hWnd, WM_SETFONT, static_cast<WPARAM>(lParam), 0);
-	/*TRUE: 続行, FALSE: 終了*/
-	return TRUE;
 }

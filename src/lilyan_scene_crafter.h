@@ -16,31 +16,31 @@ public:
 	CLilyanSceneCrafter(ID2D1DeviceContext* pD2d1DeviceContext);
 	~CLilyanSceneCrafter();
 
-	bool LoadScenario(const wchar_t* pwzScenarioFilePath);
-	bool HasScenarioData() const;
+	bool loadScenario(const std::wstring& scenarioFilePath);
+	bool hasScenarioData() const;
 
-	void GetCurrentImageSize(unsigned int* uiWidth, unsigned int* uiHeight);
-	void GetLargestImageSize(unsigned int* uiWidth, unsigned int* uiHeight);
-	std::wstring& GetSceneTitle();
+	void getCurrentImageSize(unsigned int* width, unsigned int* height);
+	void getLargestImageSize(unsigned int* width, unsigned int* height);
+	const std::wstring& getSceneTitle() const noexcept;
 
-	void ToggleImageSync();
-	bool IsImageSynced() const;
-	void ShiftImage();
+	void syncImage(bool synchronised);
+	bool isImageSynced() const;
+	void shiftForwardImage();
 
-	void ShiftScene(bool bForward);
-	bool HasReachedLastScene();
+	void shiftScene(bool forward);
+	bool hasReachedLastScene();
 
-	ID2D1Bitmap* GetCurrentImage();
-	std::wstring GetCurrentFormattedText();
-	const wchar_t* GetCurrentVoiceFilePath();
-	const wchar_t* GetCurrentSoundFilePath();
+	ID2D1Bitmap* getCurrentImage();
+	std::wstring getCurrentFormattedText();
+	const wchar_t* getCurrentVoiceFilePath();
+	const wchar_t* getCurrentSoundFilePath();
 
-	const std::vector<adv::LabelDatum>& GetLabelData() const;
-	bool JumpToLabel(size_t nLabelIndex);
+	const std::vector<adv::LabelDatum>& getLabelData() const noexcept;
+	bool jumpToLabel(size_t nLabelIndex);
 private:
 	ID2D1DeviceContext* m_pStoredD2d1DeviceContext = nullptr;
 
-	std::wstring m_wstrSceneTitle;
+	std::wstring m_sceneTitle;
 
 	std::vector<adv::TextDatum> m_textData;
 
@@ -56,8 +56,8 @@ private:
 
 	bool m_isImageSynced = true;
 
-	void ClearScenarioData();
-	ID2D1Bitmap* ImportWholeImage(const std::wstring& wstrImageFilePath);
+	void clearScenarioData();
+	ID2D1Bitmap* importWholeImage(const std::wstring& imageFilePath);
 };
 
 #endif // !LILY_SCENE_CRAFTER_H_
